@@ -1,12 +1,13 @@
 
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Menu, X, Search, ShoppingCart, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const location = useLocation();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -29,10 +30,10 @@ const Header: React.FC = () => {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/" className="text-gray-800 hover:text-jersey-purple transition-colors">Home</Link>
-            <Link to="/products" className="text-gray-800 hover:text-jersey-purple transition-colors">Products</Link>
-            <Link to="/about" className="text-gray-800 hover:text-jersey-purple transition-colors">About</Link>
-            <Link to="/contact" className="text-gray-800 hover:text-jersey-purple transition-colors">Contact</Link>
+            <Link to="/" className={`transition-colors ${location.pathname === '/' ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Home</Link>
+            <Link to="/products" className={`transition-colors ${location.pathname.includes('/products') || location.pathname.includes('/product') ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Products</Link>
+            <Link to="/about" className={`transition-colors ${location.pathname === '/about' ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>About</Link>
+            <Link to="/contact" className={`transition-colors ${location.pathname === '/contact' ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Contact</Link>
           </nav>
 
           {/* Search, Cart, Account */}
@@ -53,7 +54,7 @@ const Header: React.FC = () => {
               <ShoppingCart />
               <span className="absolute -top-2 -right-2 bg-jersey-purple text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">0</span>
             </Link>
-            <Link to="/account" className="text-gray-700 hover:text-jersey-purple">
+            <Link to="/account" className={`text-gray-700 hover:text-jersey-purple ${location.pathname === '/account' ? 'text-jersey-purple' : ''}`}>
               <User />
             </Link>
           </div>
@@ -86,11 +87,11 @@ const Header: React.FC = () => {
               </button>
             </form>
             <nav className="flex flex-col space-y-3">
-              <Link to="/" className="text-gray-800 hover:text-jersey-purple transition-colors py-2">Home</Link>
-              <Link to="/products" className="text-gray-800 hover:text-jersey-purple transition-colors py-2">Products</Link>
-              <Link to="/about" className="text-gray-800 hover:text-jersey-purple transition-colors py-2">About</Link>
-              <Link to="/contact" className="text-gray-800 hover:text-jersey-purple transition-colors py-2">Contact</Link>
-              <Link to="/account" className="text-gray-800 hover:text-jersey-purple transition-colors py-2 flex items-center gap-2">
+              <Link to="/" className={`transition-colors py-2 ${location.pathname === '/' ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Home</Link>
+              <Link to="/products" className={`transition-colors py-2 ${location.pathname.includes('/products') || location.pathname.includes('/product') ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Products</Link>
+              <Link to="/about" className={`transition-colors py-2 ${location.pathname === '/about' ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>About</Link>
+              <Link to="/contact" className={`transition-colors py-2 ${location.pathname === '/contact' ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Contact</Link>
+              <Link to="/account" className={`text-gray-800 hover:text-jersey-purple transition-colors py-2 flex items-center gap-2 ${location.pathname === '/account' ? 'text-jersey-purple' : ''}`}>
                 <User size={18} /> My Account
               </Link>
             </nav>
