@@ -1,7 +1,7 @@
 
 import React, { useState } from 'react';
 import { Check, ChevronDown, Filter } from 'lucide-react';
-import { Categories } from '@/data/mockData';
+import { categories } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
 
 interface ProductFilterProps {
