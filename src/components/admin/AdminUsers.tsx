@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -49,16 +48,25 @@ const AdminUsers = () => {
       // Get all profiles
       const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select('*, user_roles:user_roles(role)')
-        .order('created_at', { ascending: false });
+        .select('*');
 
       if (profilesError) throw profilesError;
+
+      // Get all user_roles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('*');
+
+      if (rolesError) throw rolesError;
       
       // Map and add isAdmin property
-      const usersWithRoles = profilesData?.map(profile => ({
-        ...profile,
-        isAdmin: profile.user_roles?.some((role: any) => role.role === 'admin') || false
-      })) || [];
+      const usersWithRoles = profilesData?.map(profile => {
+        const userRoles = rolesData?.filter(role => role.user_id === profile.id) || [];
+        return {
+          ...profile,
+          isAdmin: userRoles.some(role => role.role === 'admin')
+        };
+      }) || [];
       
       setUsers(usersWithRoles);
     } catch (error: any) {

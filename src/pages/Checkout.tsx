@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -31,6 +30,7 @@ import {
   CardTitle 
 } from "@/components/ui/card";
 import { Address } from "@/types";
+import { mapDatabaseAddress } from "@/utils/supabase";
 import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
 
 const addressSchema = z.object({
@@ -95,14 +95,15 @@ const Checkout = () => {
         throw error;
       }
 
-      setAddresses(data || []);
+      const mappedAddresses = data?.map(address => mapDatabaseAddress(address)) || [];
+      setAddresses(mappedAddresses);
       
       // Set default address as selected if available
-      const defaultAddress = data?.find(address => address.is_default);
+      const defaultAddress = mappedAddresses.find(address => address.isDefault);
       if (defaultAddress) {
         setSelectedAddressId(defaultAddress.id);
-      } else if (data && data.length > 0) {
-        setSelectedAddressId(data[0].id);
+      } else if (mappedAddresses && mappedAddresses.length > 0) {
+        setSelectedAddressId(mappedAddresses[0].id);
       }
     } catch (error: any) {
       console.error("Error fetching addresses:", error);
@@ -185,12 +186,12 @@ const Checkout = () => {
 
       // 2. Create order items
       const orderItems = cartItems.map(item => ({
-        order_id: orderData.id,
-        product_id: item.product.id,
+        order_id: orderData!.id,
+        product_id: item.productId,
         quantity: item.quantity,
         customization: item.customization,
-        sizes_distribution: item.sizes_distribution,
-        special_instructions: item.special_instructions,
+        sizes_distribution: item.sizesDistribution,
+        special_instructions: item.specialInstructions,
       }));
 
       const { error: orderItemsError } = await supabase
@@ -203,7 +204,7 @@ const Checkout = () => {
       const { error: statusError } = await supabase
         .from("status_updates")
         .insert({
-          order_id: orderData.id,
+          order_id: orderData!.id,
           status: "pending",
           notes: "Order placed",
         });
@@ -219,7 +220,7 @@ const Checkout = () => {
       });
 
       // Redirect to order confirmation
-      navigate(`/account/orders/${orderData.id}`);
+      navigate(`/account/orders/${orderData!.id}`);
     } catch (error: any) {
       console.error("Error placing order:", error);
       toast({
@@ -269,10 +270,10 @@ const Checkout = () => {
                                     htmlFor={`address-${address.id}`}
                                     className="font-medium cursor-pointer"
                                   >
-                                    {address.name} {address.is_default && <span className="text-xs text-jersey-purple">(Default)</span>}
+                                    {address.name} {address.isDefault && <span className="text-xs text-jersey-purple">(Default)</span>}
                                   </label>
                                   <p className="text-sm text-gray-500">
-                                    {address.street}, {address.city}, {address.postal_code}
+                                    {address.street}, {address.city}, {address.postalCode}
                                   </p>
                                   <p className="text-sm text-gray-500">Phone: {address.phone}</p>
                                 </div>

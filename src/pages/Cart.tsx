@@ -1,276 +1,260 @@
 
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
-import { Trash, Plus, Minus, ArrowRight } from "lucide-react";
-import Layout from "@/components/layout/Layout";
+import { useNavigate } from "react-router-dom";
 import { useCart } from "@/contexts/CartContext";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
-import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
 import { Separator } from "@/components/ui/separator";
 import { Input } from "@/components/ui/input";
 import { 
-  Card, 
-  CardContent, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
-} from "@/components/ui/card";
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from "@/components/ui/table";
+import { Trash2, Minus, Plus, ShoppingCart } from "lucide-react";
+import Layout from "@/components/layout/Layout";
+import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
 
-const Cart = () => {
-  const { cartItems, loading, updateCartItem, removeCartItem, totalItems, totalCost } = useCart();
+const CartPage = () => {
+  const { cartItems, loading, updateCartItem, removeCartItem, clearCart, totalCost } = useCart();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const [isUpdating, setIsUpdating] = useState<Record<string, boolean>>({});
 
-  if (!user) {
-    return (
-      <Layout>
-        <div className="max-w-4xl mx-auto py-16 px-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">Your Cart</CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <ShoppingCart className="h-16 w-16 text-gray-300 mb-4" />
-              <h3 className="text-xl font-medium mb-2">Your cart is empty</h3>
-              <p className="text-gray-500 mb-8">
-                Please sign in to view your cart or add items
-              </p>
-              <Button asChild>
-                <Link to="/auth">Sign In</Link>
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </Layout>
-    );
-  }
+  const [isClearing, setIsClearing] = useState(false);
+  const [updatingItems, setUpdatingItems] = useState<Record<string, boolean>>({});
 
-  if (loading) {
-    return (
-      <Layout>
-        <div className="max-w-4xl mx-auto py-16 px-4">
-          <h1 className="text-3xl font-bold mb-8">Your Cart</h1>
-          <p>Loading your cart...</p>
-        </div>
-      </Layout>
-    );
-  }
-
-  const handleQuantityChange = async (itemId: string, currentQuantity: number, increment: boolean) => {
-    const newQuantity = increment ? currentQuantity + 1 : Math.max(1, currentQuantity - 1);
-    
-    setIsUpdating(prev => ({ ...prev, [itemId]: true }));
+  const handleQuantityChange = async (itemId: string, newQuantity: number) => {
+    if (newQuantity < 1) return;
     
     try {
+      setUpdatingItems(prev => ({ ...prev, [itemId]: true }));
       await updateCartItem(itemId, newQuantity);
     } finally {
-      setIsUpdating(prev => ({ ...prev, [itemId]: false }));
+      setUpdatingItems(prev => ({ ...prev, [itemId]: false }));
+    }
+  };
+
+  const handleClearCart = async () => {
+    setIsClearing(true);
+    try {
+      await clearCart();
+    } finally {
+      setIsClearing(false);
     }
   };
 
   const handleRemoveItem = async (itemId: string) => {
-    setIsUpdating(prev => ({ ...prev, [itemId]: true }));
-    
     try {
+      setUpdatingItems(prev => ({ ...prev, [itemId]: true }));
       await removeCartItem(itemId);
     } finally {
-      setIsUpdating(prev => ({ ...prev, [itemId]: false }));
+      setUpdatingItems(prev => ({ ...prev, [itemId]: false }));
     }
   };
 
-  const proceedToCheckout = () => {
-    navigate("/checkout");
+  const handleCheckout = () => {
+    if (!user) {
+      navigate('/auth', { state: { from: '/cart', message: 'Please sign in to proceed to checkout' } });
+    } else {
+      navigate('/checkout');
+    }
   };
+
+  if (loading) {
+    return (
+      <Layout>
+        <div className="max-w-5xl mx-auto py-16 px-4 min-h-screen">
+          <h1 className="text-3xl font-bold mb-8">Your Cart</h1>
+          <div className="flex items-center justify-center h-64">
+            <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-jersey-purple"></div>
+          </div>
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
-      <div className="max-w-6xl mx-auto py-16 px-4">
+      <div className="max-w-5xl mx-auto py-16 px-4">
         <h1 className="text-3xl font-bold mb-8">Your Cart</h1>
 
         {cartItems.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-16">
-              <ShoppingCart className="h-16 w-16 text-gray-300 mb-4" />
-              <h3 className="text-xl font-medium mb-2">Your cart is empty</h3>
-              <p className="text-gray-500 mb-6">
-                Looks like you haven't added any products to your cart yet.
-              </p>
-              <Button asChild>
-                <Link to="/products">Browse Products</Link>
-              </Button>
-            </CardContent>
-          </Card>
+          <div className="text-center py-16">
+            <div className="flex justify-center mb-4">
+              <ShoppingCart size={64} className="text-gray-300" />
+            </div>
+            <h2 className="text-2xl font-semibold mb-2">Your cart is empty</h2>
+            <p className="text-gray-500 mb-6">Add items to your cart to proceed to checkout</p>
+            <Button onClick={() => navigate('/products')}>Continue Shopping</Button>
+          </div>
         ) : (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            <div className="lg:col-span-2">
-              {cartItems.map(item => {
-                const { id, product, quantity, sizes_distribution } = item;
-                
-                let price = product.price_tier1;
-                if (quantity > 200) {
-                  price = product.price_tier3;
-                } else if (quantity > 100) {
-                  price = product.price_tier2;
-                }
-                
-                const itemTotal = price * quantity;
-                const isItemUpdating = isUpdating[id] || false;
-                
-                return (
-                  <Card key={id} className="mb-4">
-                    <CardContent className="p-4">
-                      <div className="flex flex-col sm:flex-row">
-                        <div className="w-full sm:w-24 h-24 mb-4 sm:mb-0">
-                          {product.image_url ? (
-                            <img
-                              src={product.image_url}
-                              alt={product.name}
-                              className="w-full h-full object-cover rounded-md"
-                            />
-                          ) : (
-                            <ImagePlaceholder
-                              width="w-full"
-                              height="h-24"
-                              category={product.category}
-                              text={product.name}
-                            />
-                          )}
-                        </div>
-                        <div className="flex-1 sm:ml-6">
-                          <div className="flex flex-col sm:flex-row justify-between">
-                            <div>
-                              <h3 className="text-lg font-medium">
-                                <Link to={`/product/${product.id}`} className="text-jersey-navy hover:text-jersey-purple">
-                                  {product.name}
-                                </Link>
-                              </h3>
-                              <p className="text-sm text-gray-500 mb-2">
-                                Price: ৳{price} per piece
-                              </p>
-                              
-                              {/* Show size distribution if available */}
-                              {sizes_distribution && Object.keys(sizes_distribution).length > 0 && (
-                                <div className="text-sm text-gray-600 mb-2">
-                                  <span className="font-medium">Sizes: </span>
-                                  {Object.entries(sizes_distribution)
-                                    .map(([size, count]) => `${size} (${count})`)
-                                    .join(", ")}
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Cart Items Table */}
+              <div className="lg:col-span-2">
+                <div className="border rounded-md overflow-hidden">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Product</TableHead>
+                        <TableHead className="hidden sm:table-cell">Price</TableHead>
+                        <TableHead>Quantity</TableHead>
+                        <TableHead className="text-right">Total</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {cartItems.map(item => {
+                        let price = item.product.price_tier1;
+                        if (item.quantity > 200) {
+                          price = item.product.price_tier3;
+                        } else if (item.quantity > 100) {
+                          price = item.product.price_tier2;
+                        }
+                        
+                        const itemTotal = price * item.quantity;
+                        
+                        return (
+                          <TableRow key={item.id}>
+                            <TableCell className="font-medium">
+                              <div className="flex items-center">
+                                <div className="w-16 h-16 mr-3 bg-gray-100 rounded-md overflow-hidden">
+                                  {item.product.image_url ? (
+                                    <img
+                                      src={item.product.image_url}
+                                      alt={item.product.name}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <ImagePlaceholder
+                                      width="w-full"
+                                      height="h-16"
+                                      category={item.product.category}
+                                    />
+                                  )}
                                 </div>
-                              )}
-                            </div>
-                            <div className="flex items-center mt-4 sm:mt-0">
-                              <div className="flex items-center mr-6">
+                                <div>
+                                  <div className="font-medium">{item.product.name}</div>
+                                  <div className="text-xs text-gray-500 mt-1">
+                                    {Object.entries(item.sizesDistribution).map(([size, count]) => (
+                                      <span key={size} className="mr-2">
+                                        {size}: {count}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="hidden sm:table-cell">৳{price}</TableCell>
+                            <TableCell>
+                              <div className="flex items-center space-x-1">
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => handleQuantityChange(id, quantity, false)}
-                                  disabled={isItemUpdating || quantity <= 1}
                                   className="h-8 w-8"
+                                  onClick={() => handleQuantityChange(item.id, Math.max(1, item.quantity - 1))}
+                                  disabled={updatingItems[item.id]}
                                 >
-                                  <Minus size={14} />
+                                  <Minus size={12} />
                                 </Button>
                                 <Input
                                   type="number"
-                                  value={quantity}
-                                  disabled={isItemUpdating}
-                                  className="w-16 mx-2 text-center"
-                                  readOnly
+                                  min={1}
+                                  value={item.quantity}
+                                  onChange={(e) => handleQuantityChange(item.id, parseInt(e.target.value) || 1)}
+                                  className="h-8 w-14 text-center"
+                                  disabled={updatingItems[item.id]}
                                 />
                                 <Button
                                   variant="outline"
                                   size="icon"
-                                  onClick={() => handleQuantityChange(id, quantity, true)}
-                                  disabled={isItemUpdating}
                                   className="h-8 w-8"
+                                  onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                                  disabled={updatingItems[item.id]}
                                 >
-                                  <Plus size={14} />
+                                  <Plus size={12} />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-8 w-8 text-red-500"
+                                  onClick={() => handleRemoveItem(item.id)}
+                                  disabled={updatingItems[item.id]}
+                                >
+                                  <Trash2 size={14} />
                                 </Button>
                               </div>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleRemoveItem(id)}
-                                disabled={isItemUpdating}
-                                className="text-red-500 hover:text-red-600 hover:bg-red-50"
-                              >
-                                <Trash size={18} />
-                              </Button>
-                            </div>
-                          </div>
-                          <div className="mt-2 sm:text-right">
-                            <span className="font-medium">Total: ৳{itemTotal}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-            </div>
-
-            {/* Order Summary */}
-            <div className="lg:col-span-1">
-              <Card>
-                <CardHeader>
-                  <CardTitle>Order Summary</CardTitle>
-                </CardHeader>
-                <CardContent>
+                            </TableCell>
+                            <TableCell className="text-right">৳{itemTotal}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+                
+                <div className="flex justify-end mt-4">
+                  <Button 
+                    variant="outline" 
+                    className="text-red-600 hover:text-red-700"
+                    onClick={handleClearCart}
+                    disabled={isClearing}
+                  >
+                    {isClearing ? 'Clearing...' : 'Clear Cart'}
+                  </Button>
+                </div>
+              </div>
+              
+              {/* Order Summary */}
+              <div className="lg:col-span-1">
+                <div className="border rounded-lg p-6">
+                  <h2 className="text-xl font-bold mb-4">Order Summary</h2>
+                  
                   <div className="space-y-4">
                     <div className="flex justify-between">
-                      <span>Items ({totalItems}):</span>
+                      <span>Subtotal</span>
                       <span>৳{totalCost}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span>Discount:</span>
+                      <span>Shipping</span>
                       <span>৳0</span>
                     </div>
                     <Separator />
-                    <div className="flex justify-between font-medium text-lg">
-                      <span>Total:</span>
+                    <div className="flex justify-between font-bold text-lg">
+                      <span>Total</span>
                       <span>৳{totalCost}</span>
                     </div>
                   </div>
-                </CardContent>
-                <CardFooter>
+                  
                   <Button 
-                    className="w-full" 
-                    onClick={proceedToCheckout}
-                    disabled={cartItems.length === 0}
+                    className="w-full mt-6"
+                    onClick={handleCheckout}
                   >
-                    Proceed to Checkout <ArrowRight size={16} className="ml-2" />
+                    Proceed to Checkout
                   </Button>
-                </CardFooter>
-              </Card>
+                  
+                  <Button
+                    variant="outline"
+                    className="w-full mt-2"
+                    onClick={() => navigate('/products')}
+                  >
+                    Continue Shopping
+                  </Button>
+                  
+                  <div className="mt-4 text-xs text-gray-500">
+                    <p>Free shipping on orders above ৳5,000</p>
+                    <p>Delivery in 5-7 business days after confirmation</p>
+                  </div>
+                </div>
+              </div>
             </div>
-          </div>
+          </>
         )}
       </div>
     </Layout>
   );
 };
 
-// Import for icon when cart is empty
-const ShoppingCart = (props: React.SVGProps<SVGSVGElement>) => {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="8" cy="21" r="1" />
-      <circle cx="19" cy="21" r="1" />
-      <path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12" />
-    </svg>
-  );
-};
-
-export default Cart;
+export default CartPage;

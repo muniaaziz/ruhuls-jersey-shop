@@ -33,7 +33,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // Check admin status
         if (currentSession?.user) {
           setTimeout(() => {
-            checkAdminStatus(currentSession.user.id);
+            checkAdminStatus();
           }, 0);
         } else {
           setIsAdmin(false);
@@ -47,7 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(currentSession?.user ?? null);
       
       if (currentSession?.user) {
-        checkAdminStatus(currentSession.user.id);
+        checkAdminStatus();
       }
       setLoading(false);
     });
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, []);
 
-  const checkAdminStatus = async (userId: string) => {
+  const checkAdminStatus = async () => {
     try {
       const { data, error } = await supabase.rpc('has_role', {
         _role: 'admin'

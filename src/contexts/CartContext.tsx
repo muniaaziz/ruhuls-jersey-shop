@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
 import { CartItem, Product } from "@/types";
 import { useToast } from "@/hooks/use-toast";
+import { Tables } from "@/utils/supabase";
+import { mapDatabaseCartItem } from "@/utils/supabase";
 
 type CartContextType = {
   cartItems: CartItem[];
@@ -42,7 +44,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
       
-      setCartItems(data || []);
+      const mappedItems = data?.map(item => mapDatabaseCartItem(item)) || [];
+      setCartItems(mappedItems);
     } catch (error: any) {
       console.error('Error loading cart:', error);
       toast({

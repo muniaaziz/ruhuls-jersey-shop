@@ -31,8 +31,10 @@ export interface Category {
 }
 
 export interface CartItem {
+  id: string;
   productId: string;
   quantity: number;
+  product?: any;
   customization: {
     names?: { name: string; size: string }[];
     numbers?: { number: string; size: string }[];

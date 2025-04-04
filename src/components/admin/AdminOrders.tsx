@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -79,14 +78,13 @@ const AdminOrders = () => {
           *,
           profiles:profiles(first_name, last_name),
           address:addresses(city, street)
-        `)
-        .order('created_at', { ascending: false });
+        `);
         
       if (statusFilter !== "all") {
         query = query.eq('status', statusFilter);
       }
         
-      const { data, error } = await query;
+      const { data, error } = await query.order('created_at', { ascending: false });
 
       if (error) throw error;
       
@@ -107,7 +105,10 @@ const AdminOrders = () => {
     try {
       const { error: orderError } = await supabase
         .from('orders')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
+        .update({ 
+          status: newStatus, 
+          updated_at: new Date().toISOString() 
+        })
         .eq('id', orderId);
         
       if (orderError) throw orderError;
