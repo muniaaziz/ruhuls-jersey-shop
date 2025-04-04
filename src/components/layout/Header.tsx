@@ -1,13 +1,26 @@
 
 import React, { useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Search, ShoppingCart, User } from 'lucide-react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Menu, X, Search, ShoppingCart, User, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
+import { useCart } from '@/contexts/CartContext';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const Header: React.FC = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut, isAdmin } = useAuth();
+  const { totalItems } = useCart();
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
@@ -17,6 +30,14 @@ const Header: React.FC = () => {
     e.preventDefault();
     // Handle search functionality
     console.log('Searching for:', searchQuery);
+    if (searchQuery.trim()) {
+      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
+    }
+  };
+
+  const handleSignOut = async () => {
+    await signOut();
+    navigate('/');
   };
 
   return (
@@ -34,6 +55,9 @@ const Header: React.FC = () => {
             <Link to="/products" className={`transition-colors ${location.pathname.includes('/products') || location.pathname.includes('/product') ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Products</Link>
             <Link to="/about" className={`transition-colors ${location.pathname === '/about' ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>About</Link>
             <Link to="/contact" className={`transition-colors ${location.pathname === '/contact' ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Contact</Link>
+            {isAdmin && (
+              <Link to="/admin" className={`transition-colors ${location.pathname.includes('/admin') ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Admin</Link>
+            )}
           </nav>
 
           {/* Search, Cart, Account */}
@@ -52,18 +76,57 @@ const Header: React.FC = () => {
             </form>
             <Link to="/cart" className="text-gray-700 hover:text-jersey-purple relative">
               <ShoppingCart />
-              <span className="absolute -top-2 -right-2 bg-jersey-purple text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">0</span>
+              {totalItems > 0 && (
+                <span className="absolute -top-2 -right-2 bg-jersey-purple text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                  {totalItems > 99 ? '99+' : totalItems}
+                </span>
+              )}
             </Link>
-            <Link to="/account" className={`text-gray-700 hover:text-jersey-purple ${location.pathname === '/account' ? 'text-jersey-purple' : ''}`}>
-              <User />
-            </Link>
+            
+            {user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className={`text-gray-700 hover:text-jersey-purple ${location.pathname === '/account' ? 'text-jersey-purple' : ''}`}>
+                    <User size={20} />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Account</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem asChild>
+                    <Link to="/account" className="w-full cursor-pointer">Profile</Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to="/account/orders" className="w-full cursor-pointer">My Orders</Link>
+                  </DropdownMenuItem>
+                  {isAdmin && (
+                    <DropdownMenuItem asChild>
+                      <Link to="/admin" className="w-full cursor-pointer">Admin Dashboard</Link>
+                    </DropdownMenuItem>
+                  )}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleSignOut} className="text-red-500 cursor-pointer">
+                    <LogOut size={16} className="mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Link to="/auth" className="text-gray-700 hover:text-jersey-purple">
+                <Button variant="outline" size="sm">Sign In</Button>
+              </Link>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
           <div className="md:hidden flex items-center space-x-4">
             <Link to="/cart" className="text-gray-700 hover:text-jersey-purple relative">
               <ShoppingCart size={20} />
-              <span className="absolute -top-2 -right-2 bg-jersey-purple text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">0</span>
+              {totalItems > 0 && (
+                <span className="absolute -top-2 -right-2 bg-jersey-purple text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                  {totalItems > 99 ? '99+' : totalItems}
+                </span>
+              )}
             </Link>
             <button onClick={toggleMenu} className="text-gray-700">
               {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -91,9 +154,32 @@ const Header: React.FC = () => {
               <Link to="/products" className={`transition-colors py-2 ${location.pathname.includes('/products') || location.pathname.includes('/product') ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Products</Link>
               <Link to="/about" className={`transition-colors py-2 ${location.pathname === '/about' ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>About</Link>
               <Link to="/contact" className={`transition-colors py-2 ${location.pathname === '/contact' ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Contact</Link>
-              <Link to="/account" className={`text-gray-800 hover:text-jersey-purple transition-colors py-2 flex items-center gap-2 ${location.pathname === '/account' ? 'text-jersey-purple' : ''}`}>
-                <User size={18} /> My Account
-              </Link>
+              {isAdmin && (
+                <Link to="/admin" className={`transition-colors py-2 ${location.pathname.includes('/admin') ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Admin</Link>
+              )}
+              
+              {user ? (
+                <>
+                  <Link to="/account" className={`transition-colors py-2 text-gray-800 hover:text-jersey-purple ${location.pathname === '/account' ? 'text-jersey-purple' : ''}`}>
+                    <div className="flex items-center gap-2">
+                      <User size={18} /> My Account
+                    </div>
+                  </Link>
+                  <Link to="/account/orders" className="transition-colors py-2 text-gray-800 hover:text-jersey-purple">
+                    My Orders
+                  </Link>
+                  <button
+                    onClick={handleSignOut}
+                    className="flex items-center gap-2 text-red-500 py-2"
+                  >
+                    <LogOut size={18} /> Sign Out
+                  </button>
+                </>
+              ) : (
+                <Link to="/auth" className="transition-colors py-2 text-gray-800 hover:text-jersey-purple">
+                  <Button>Sign In / Register</Button>
+                </Link>
+              )}
             </nav>
           </div>
         )}
