@@ -190,12 +190,26 @@ const AdminProducts = () => {
 
   const onSubmit = async (values: ProductFormValues) => {
     try {
+      // Fix: Ensure all required fields are present and convert empty image_url to null
+      const productData = {
+        name: values.name, // Required
+        description: values.description, // Required
+        category_id: values.category_id || null,
+        subcategory: values.subcategory || null,
+        price_tier1: values.price_tier1, // Required
+        price_tier2: values.price_tier2, // Required
+        price_tier3: values.price_tier3, // Required
+        image_url: values.image_url || 'https://placehold.co/400x400?text=No+Image', // Required, use placeholder if empty
+        popular: values.popular || false,
+        name_allowed: values.name_allowed || false,
+        number_allowed: values.number_allowed || false,
+        logo_allowed: values.logo_allowed || false,
+        custom_design_allowed: values.custom_design_allowed || false,
+      };
+
       const { data, error } = await supabase
         .from('products')
-        .insert([{
-          ...values,
-          image_url: values.image_url || null,
-        }])
+        .insert([productData])
         .select();
 
       if (error) throw error;
@@ -222,12 +236,26 @@ const AdminProducts = () => {
     try {
       if (!productToEdit) return;
 
+      // Fix: Ensure all required fields are present and convert empty image_url to null
+      const productData = {
+        name: values.name, // Required
+        description: values.description, // Required
+        category_id: values.category_id || null,
+        subcategory: values.subcategory || null,
+        price_tier1: values.price_tier1, // Required
+        price_tier2: values.price_tier2, // Required
+        price_tier3: values.price_tier3, // Required
+        image_url: values.image_url || 'https://placehold.co/400x400?text=No+Image', // Required, use placeholder if empty
+        popular: values.popular || false,
+        name_allowed: values.name_allowed || false,
+        number_allowed: values.number_allowed || false,
+        logo_allowed: values.logo_allowed || false,
+        custom_design_allowed: values.custom_design_allowed || false,
+      };
+
       const { error } = await supabase
         .from('products')
-        .update({
-          ...values,
-          image_url: values.image_url || null,
-        })
+        .update(productData)
         .eq('id', productToEdit.id);
 
       if (error) throw error;
