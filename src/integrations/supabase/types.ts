@@ -152,6 +152,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_order_items_orders"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fk_order_items_products"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "order_items_order_id_fkey"
             columns: ["order_id"]
             isOneToOne: false
@@ -203,6 +217,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "fk_orders_profiles"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "orders_delivery_address_id_fkey"
             columns: ["delivery_address_id"]
             isOneToOne: false
@@ -237,6 +258,13 @@ export type Database = {
           order_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_payment_records_orders"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "payment_records_order_id_fkey"
             columns: ["order_id"]
@@ -364,6 +392,13 @@ export type Database = {
           status?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_status_updates_orders"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "status_updates_order_id_fkey"
             columns: ["order_id"]

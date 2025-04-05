@@ -97,15 +97,26 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       
       if (existingItem) {
         // Update existing cart item
-        // Fix: Use type assertion to handle the spread operator correctly
         const sizeDist = existingItem.sizes_distribution as Record<string, number> || {};
         const customOpts = existingItem.customization as Record<string, any> || {};
+        
+        const newQuantity = existingItem.quantity + quantity;
+        
+        // Merge the sizes distribution
+        const newSizesDistribution = { ...sizeDist };
+        for (const [size, count] of Object.entries(sizesDistribution)) {
+          if (newSizesDistribution[size]) {
+            newSizesDistribution[size] += count;
+          } else {
+            newSizesDistribution[size] = count;
+          }
+        }
         
         const { error: updateError } = await supabase
           .from('cart_items')
           .update({
-            quantity: existingItem.quantity + quantity,
-            sizes_distribution: { ...sizeDist, ...sizesDistribution },
+            quantity: newQuantity,
+            sizes_distribution: newSizesDistribution,
             customization: { ...customOpts, ...customization },
             special_instructions: specialInstructions || existingItem.special_instructions,
             updated_at: new Date().toISOString()
@@ -118,7 +129,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         
         toast({
           title: "Cart updated",
-          description: `${product.name} quantity increased to ${existingItem.quantity + quantity}`,
+          description: `${product.name} quantity increased to ${newQuantity}`,
         });
       } else {
         // Add new cart item

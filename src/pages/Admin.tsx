@@ -20,6 +20,7 @@ import AdminDashboard from "@/components/admin/AdminDashboard";
 import AdminProducts from "@/components/admin/AdminProducts";
 import AdminOrders from "@/components/admin/AdminOrders";
 import AdminUsers from "@/components/admin/AdminUsers";
+import AdminSettings from "@/components/admin/AdminSettings";
 
 const AdminLayout = () => {
   const { user, loading } = useAuth();
@@ -207,6 +208,10 @@ const AdminLayout = () => {
               
               <TabsContent value="users">
                 <AdminUsers />
+              </TabsContent>
+              
+              <TabsContent value="settings">
+                <AdminSettings />
               </TabsContent>
             </Tabs>
           )}
