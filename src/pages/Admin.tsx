@@ -14,13 +14,15 @@ import {
   Home,
   PanelLeftOpen,
   PanelLeftClose,
-  Database
+  Database,
+  LayoutGrid
 } from "lucide-react";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import AdminProducts from "@/components/admin/AdminProducts";
 import AdminOrders from "@/components/admin/AdminOrders";
 import AdminUsers from "@/components/admin/AdminUsers";
 import AdminSettings from "@/components/admin/AdminSettings";
+import AdminCategories from "@/components/admin/AdminCategories";
 
 const AdminLayout = () => {
   const { user, loading } = useAuth();
@@ -91,6 +93,9 @@ const AdminLayout = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
 
+  // Check if we're on a specific admin route
+  const onSpecificRoute = location.pathname !== "/admin" && location.pathname.startsWith("/admin/");
+
   return (
     <div className="min-h-screen bg-gray-100">
       <div className="bg-white border-b border-gray-200 p-4 flex justify-between items-center">
@@ -126,6 +131,17 @@ const AdminLayout = () => {
               >
                 <ShoppingBag size={20} />
                 {isSidebarOpen && <span className="ml-3">Dashboard</span>}
+              </Link>
+              <Link 
+                to="/admin/categories" 
+                className={`flex items-center p-2 rounded-lg ${
+                  activeTab === "categories" 
+                    ? "bg-jersey-purple text-white" 
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                <LayoutGrid size={20} />
+                {isSidebarOpen && <span className="ml-3">Categories</span>}
               </Link>
               <Link 
                 to="/admin/products" 
@@ -184,18 +200,30 @@ const AdminLayout = () => {
 
         {/* Main content area */}
         <div className="flex-1 p-8 overflow-auto">
-          <Outlet />
-          {!location.pathname.includes("/admin/") && (
-            <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value)} className="space-y-6">
-              <TabsList className="grid grid-cols-4 w-full max-w-3xl mb-8">
+          {onSpecificRoute ? (
+            <Outlet />
+          ) : (
+            <Tabs value={activeTab} onValueChange={(value) => {
+              setActiveTab(value);
+              if (value !== activeTab) {
+                navigate(`/admin/${value === "dashboard" ? "" : value}`);
+              }
+            }} className="space-y-6">
+              <TabsList className="grid grid-cols-6 w-full max-w-4xl mb-8">
                 <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
+                <TabsTrigger value="categories">Categories</TabsTrigger>
                 <TabsTrigger value="products">Products</TabsTrigger>
                 <TabsTrigger value="orders">Orders</TabsTrigger>
                 <TabsTrigger value="users">Users</TabsTrigger>
+                <TabsTrigger value="settings">Settings</TabsTrigger>
               </TabsList>
               
               <TabsContent value="dashboard">
                 <AdminDashboard />
+              </TabsContent>
+              
+              <TabsContent value="categories">
+                <AdminCategories />
               </TabsContent>
               
               <TabsContent value="products">

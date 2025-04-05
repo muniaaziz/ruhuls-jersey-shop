@@ -19,6 +19,11 @@ import Admin from "./pages/Admin";
 import AdminLogin from "./pages/AdminLogin";
 import MyOrders from "./pages/MyOrders";
 import SeedProducts from "./pages/SeedProducts";
+import AdminProducts from "./components/admin/AdminProducts";
+import AdminOrders from "./components/admin/AdminOrders";
+import AdminUsers from "./components/admin/AdminUsers";
+import AdminSettings from "./components/admin/AdminSettings";
+import AdminCategories from "./components/admin/AdminCategories";
 
 // Create a client
 const queryClient = new QueryClient();
