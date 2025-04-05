@@ -17,12 +17,6 @@ import {
   Database,
   LayoutGrid
 } from "lucide-react";
-import AdminDashboard from "@/components/admin/AdminDashboard";
-import AdminProducts from "@/components/admin/AdminProducts";
-import AdminOrders from "@/components/admin/AdminOrders";
-import AdminUsers from "@/components/admin/AdminUsers";
-import AdminSettings from "@/components/admin/AdminSettings";
-import AdminCategories from "@/components/admin/AdminCategories";
 
 const AdminLayout = () => {
   const { user, loading } = useAuth();
@@ -58,14 +52,10 @@ const AdminLayout = () => {
     
     checkAdminStatus();
     
-    // Set active tab based on URL
-    const path = location.pathname.split("/").pop();
-    if (path === "admin") {
-      setActiveTab("dashboard");
-    } else if (path) {
-      setActiveTab(path);
-    }
-  }, [user, location]);
+    // Set active tab based on URL path
+    const path = location.pathname.split("/").pop() || "dashboard";
+    setActiveTab(path === "admin" ? "dashboard" : path);
+  }, [user, location.pathname]);
 
   // Show loading state
   if (loading || checkingAdmin) {
@@ -92,9 +82,6 @@ const AdminLayout = () => {
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
   };
-
-  // Check if we're on a specific admin route
-  const onSpecificRoute = location.pathname !== "/admin" && location.pathname.startsWith("/admin/");
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -200,49 +187,8 @@ const AdminLayout = () => {
 
         {/* Main content area */}
         <div className="flex-1 p-8 overflow-auto">
-          {onSpecificRoute ? (
-            <Outlet />
-          ) : (
-            <Tabs value={activeTab} onValueChange={(value) => {
-              setActiveTab(value);
-              if (value !== activeTab) {
-                navigate(`/admin/${value === "dashboard" ? "" : value}`);
-              }
-            }} className="space-y-6">
-              <TabsList className="grid grid-cols-6 w-full max-w-4xl mb-8">
-                <TabsTrigger value="dashboard">Dashboard</TabsTrigger>
-                <TabsTrigger value="categories">Categories</TabsTrigger>
-                <TabsTrigger value="products">Products</TabsTrigger>
-                <TabsTrigger value="orders">Orders</TabsTrigger>
-                <TabsTrigger value="users">Users</TabsTrigger>
-                <TabsTrigger value="settings">Settings</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="dashboard">
-                <AdminDashboard />
-              </TabsContent>
-              
-              <TabsContent value="categories">
-                <AdminCategories />
-              </TabsContent>
-              
-              <TabsContent value="products">
-                <AdminProducts />
-              </TabsContent>
-              
-              <TabsContent value="orders">
-                <AdminOrders />
-              </TabsContent>
-              
-              <TabsContent value="users">
-                <AdminUsers />
-              </TabsContent>
-              
-              <TabsContent value="settings">
-                <AdminSettings />
-              </TabsContent>
-            </Tabs>
-          )}
+          {/* Use Outlet to render nested routes */}
+          <Outlet />
         </div>
       </div>
     </div>
