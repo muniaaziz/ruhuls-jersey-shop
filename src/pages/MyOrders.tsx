@@ -166,7 +166,7 @@ const MyOrders = () => {
                             <p className="text-xs text-gray-500 mt-1">
                               {Object.entries(item.sizes_distribution).map(([size, count]) => (
                                 <span key={size} className="mr-2">
-                                  {size}: {count}
+                                  {size}: {String(count)}
                                 </span>
                               ))}
                             </p>

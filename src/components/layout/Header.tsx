@@ -1,7 +1,7 @@
 
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { useMediaQuery } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useAuth } from "@/contexts/AuthContext";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
@@ -29,10 +29,10 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 
 const Header = () => {
-  const { isAuthenticated, user, signOut, isAdmin } = useAuth();
+  const { user, signOut } = useAuth();
   const { totalItems } = useCart();
   const navigate = useNavigate();
-  const isMobile = useMediaQuery("(max-width: 768px)");
+  const isMobile = useIsMobile();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
@@ -108,7 +108,7 @@ const Header = () => {
                   </Link>
                 ))}
                 <Separator className="my-4" />
-                {isAuthenticated ? (
+                {user ? (
                   <>
                     <Link
                       to="/my-orders"
@@ -124,7 +124,7 @@ const Header = () => {
                     >
                       My Account
                     </Link>
-                    {isAdmin && (
+                    {user && (
                       <Link
                         to="/admin"
                         className="py-3 text-base hover:text-primary"
@@ -174,7 +174,7 @@ const Header = () => {
           </Link>
 
           <div className="hidden md:flex">
-            {isAuthenticated ? (
+            {user ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon">
@@ -194,11 +194,9 @@ const Header = () => {
                   <DropdownMenuItem asChild>
                     <Link to="/my-orders">My Orders</Link>
                   </DropdownMenuItem>
-                  {isAdmin && (
-                    <DropdownMenuItem asChild>
-                      <Link to="/admin">Admin Dashboard</Link>
-                    </DropdownMenuItem>
-                  )}
+                  <DropdownMenuItem asChild>
+                    <Link to="/admin">Admin Dashboard</Link>
+                  </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={handleSignOut}>
                     Sign out
