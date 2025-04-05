@@ -19,11 +19,11 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { PlusCircle, Pencil, Trash2, Search } from "lucide-react";
+import { PlusCircle, Pencil, Trash2, Search, Tag, X, Plus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 const AdminCategories = () => {
   const [categories, setCategories] = useState<any[]>([]);
@@ -36,8 +36,11 @@ const AdminCategories = () => {
   const [categoryToEdit, setCategoryToEdit] = useState<any>(null);
   const [newCategory, setNewCategory] = useState({
     name: "",
-    image_url: ""
+    image_url: "",
+    subcategories: [] as string[]
   });
+  const [newSubcategory, setNewSubcategory] = useState("");
+  const [editNewSubcategory, setEditNewSubcategory] = useState("");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -83,7 +86,8 @@ const AdminCategories = () => {
         .insert([
           { 
             name: newCategory.name.trim(),
-            image_url: newCategory.image_url.trim() || null
+            image_url: newCategory.image_url.trim() || null,
+            subcategories: newCategory.subcategories
           }
         ])
         .select();
@@ -97,7 +101,7 @@ const AdminCategories = () => {
       
       setCategories([...(data || []), ...categories]);
       setIsAddDialogOpen(false);
-      setNewCategory({ name: "", image_url: "" });
+      setNewCategory({ name: "", image_url: "", subcategories: [] });
       fetchCategories();
     } catch (error: any) {
       console.error('Error adding category:', error);
@@ -124,7 +128,8 @@ const AdminCategories = () => {
         .from('categories')
         .update({ 
           name: categoryToEdit.name.trim(),
-          image_url: categoryToEdit.image_url?.trim() || null
+          image_url: categoryToEdit.image_url?.trim() || null,
+          subcategories: categoryToEdit.subcategories || []
         })
         .eq('id', categoryToEdit.id);
 
@@ -187,8 +192,48 @@ const AdminCategories = () => {
   };
 
   const openEditDialog = (category: any) => {
-    setCategoryToEdit({...category});
+    setCategoryToEdit({
+      ...category,
+      subcategories: category.subcategories || []
+    });
     setIsEditDialogOpen(true);
+  };
+
+  const addSubcategory = () => {
+    if (!newSubcategory.trim()) return;
+    
+    setNewCategory({
+      ...newCategory,
+      subcategories: [...newCategory.subcategories, newSubcategory.trim()]
+    });
+    
+    setNewSubcategory("");
+  };
+
+  const removeSubcategory = (index: number) => {
+    const updatedSubcategories = [...newCategory.subcategories];
+    updatedSubcategories.splice(index, 1);
+    setNewCategory({ ...newCategory, subcategories: updatedSubcategories });
+  };
+
+  const addEditSubcategory = () => {
+    if (!editNewSubcategory.trim() || !categoryToEdit) return;
+    
+    const updatedSubcategories = [...(categoryToEdit.subcategories || []), editNewSubcategory.trim()];
+    setCategoryToEdit({
+      ...categoryToEdit,
+      subcategories: updatedSubcategories
+    });
+    
+    setEditNewSubcategory("");
+  };
+
+  const removeEditSubcategory = (index: number) => {
+    if (!categoryToEdit) return;
+    
+    const updatedSubcategories = [...categoryToEdit.subcategories];
+    updatedSubcategories.splice(index, 1);
+    setCategoryToEdit({ ...categoryToEdit, subcategories: updatedSubcategories });
   };
 
   const filteredCategories = categories.filter(category =>
@@ -228,6 +273,7 @@ const AdminCategories = () => {
               <TableRow>
                 <TableHead>Category</TableHead>
                 <TableHead>Image URL</TableHead>
+                <TableHead>Subcategories</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -237,6 +283,19 @@ const AdminCategories = () => {
                   <TableRow key={category.id}>
                     <TableCell className="font-medium">{category.name}</TableCell>
                     <TableCell className="max-w-xs truncate">{category.image_url || 'No image'}</TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1 max-w-xs">
+                        {category.subcategories && category.subcategories.length > 0 ? (
+                          category.subcategories.map((subcat: string, index: number) => (
+                            <Badge key={index} variant="secondary" className="text-xs">
+                              {subcat}
+                            </Badge>
+                          ))
+                        ) : (
+                          <span className="text-gray-500 text-sm">No subcategories</span>
+                        )}
+                      </div>
+                    </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
                         <Button variant="ghost" size="icon" onClick={() => openEditDialog(category)}>
@@ -251,7 +310,7 @@ const AdminCategories = () => {
                 ))
               ) : (
                 <TableRow>
-                  <TableCell colSpan={3} className="text-center py-8">
+                  <TableCell colSpan={4} className="text-center py-8">
                     No categories found
                   </TableCell>
                 </TableRow>
@@ -263,7 +322,7 @@ const AdminCategories = () => {
 
       {/* Add Category Dialog */}
       <Dialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add New Category</DialogTitle>
             <DialogDescription>
@@ -289,6 +348,52 @@ const AdminCategories = () => {
                 placeholder="https://example.com/image.jpg"
               />
             </div>
+            <div className="grid gap-2">
+              <Label htmlFor="subcategories">Subcategories</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="subcategories"
+                  value={newSubcategory}
+                  onChange={(e) => setNewSubcategory(e.target.value)}
+                  placeholder="e.g., Club Jerseys"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addSubcategory();
+                    }
+                  }}
+                />
+                <Button 
+                  type="button" 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={addSubcategory}
+                >
+                  <Plus size={16} />
+                </Button>
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                Press Enter to add a subcategory
+              </div>
+              <div className="flex flex-wrap gap-1 mt-2">
+                {newCategory.subcategories.map((subcategory, index) => (
+                  <Badge key={index} variant="secondary" className="pr-1 flex items-center gap-1">
+                    <Tag size={12} />
+                    {subcategory}
+                    <button 
+                      onClick={() => removeSubcategory(index)}
+                      className="ml-1 hover:bg-gray-200 rounded-full p-1"
+                    >
+                      <X size={12} />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                Subcategories help organize products and improve navigation for customers.
+                You can add, edit, or remove subcategories later.
+              </div>
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsAddDialogOpen(false)}>Cancel</Button>
@@ -299,7 +404,7 @@ const AdminCategories = () => {
 
       {/* Edit Category Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Edit Category</DialogTitle>
             <DialogDescription>
@@ -324,6 +429,52 @@ const AdminCategories = () => {
                   onChange={(e) => setCategoryToEdit({...categoryToEdit, image_url: e.target.value})}
                   placeholder="https://example.com/image.jpg"
                 />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="edit-subcategories">Subcategories</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="edit-subcategories"
+                    value={editNewSubcategory}
+                    onChange={(e) => setEditNewSubcategory(e.target.value)}
+                    placeholder="e.g., Club Jerseys"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        addEditSubcategory();
+                      }
+                    }}
+                  />
+                  <Button 
+                    type="button" 
+                    size="sm" 
+                    variant="outline" 
+                    onClick={addEditSubcategory}
+                  >
+                    <Plus size={16} />
+                  </Button>
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Press Enter to add a subcategory
+                </div>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {categoryToEdit.subcategories && categoryToEdit.subcategories.map((subcategory: string, index: number) => (
+                    <Badge key={index} variant="secondary" className="pr-1 flex items-center gap-1">
+                      <Tag size={12} />
+                      {subcategory}
+                      <button 
+                        onClick={() => removeEditSubcategory(index)}
+                        className="ml-1 hover:bg-gray-200 rounded-full p-1"
+                      >
+                        <X size={12} />
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+                <div className="text-xs text-gray-500 mt-1">
+                  Adding or removing subcategories will affect product filtering and navigation.
+                  Products with removed subcategories will still exist, but may need to be recategorized.
+                </div>
               </div>
             </div>
           )}

@@ -115,6 +115,7 @@ const AdminLayout = () => {
                     ? "bg-jersey-purple text-white" 
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
+                onClick={() => setActiveTab("dashboard")}
               >
                 <ShoppingBag size={20} />
                 {isSidebarOpen && <span className="ml-3">Dashboard</span>}
@@ -126,6 +127,7 @@ const AdminLayout = () => {
                     ? "bg-jersey-purple text-white" 
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
+                onClick={() => setActiveTab("categories")}
               >
                 <LayoutGrid size={20} />
                 {isSidebarOpen && <span className="ml-3">Categories</span>}
@@ -137,6 +139,7 @@ const AdminLayout = () => {
                     ? "bg-jersey-purple text-white" 
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
+                onClick={() => setActiveTab("products")}
               >
                 <Package size={20} />
                 {isSidebarOpen && <span className="ml-3">Products</span>}
@@ -148,6 +151,7 @@ const AdminLayout = () => {
                     ? "bg-jersey-purple text-white" 
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
+                onClick={() => setActiveTab("orders")}
               >
                 <ShoppingBag size={20} />
                 {isSidebarOpen && <span className="ml-3">Orders</span>}
@@ -159,6 +163,7 @@ const AdminLayout = () => {
                     ? "bg-jersey-purple text-white" 
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
+                onClick={() => setActiveTab("users")}
               >
                 <Users size={20} />
                 {isSidebarOpen && <span className="ml-3">Users</span>}
@@ -170,6 +175,7 @@ const AdminLayout = () => {
                     ? "bg-jersey-purple text-white" 
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
+                onClick={() => setActiveTab("settings")}
               >
                 <Settings size={20} />
                 {isSidebarOpen && <span className="ml-3">Settings</span>}

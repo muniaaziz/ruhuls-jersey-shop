@@ -18,6 +18,9 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { X, Tag } from "lucide-react";
 
 const SeedProducts = () => {
   const [loading, setLoading] = useState(false);
@@ -25,7 +28,8 @@ const SeedProducts = () => {
   const [categories, setCategories] = useState<any[]>([]);
   const [isCheckingCategories, setIsCheckingCategories] = useState(true);
   const [isAddCategoryDialogOpen, setIsAddCategoryDialogOpen] = useState(false);
-  const [newCategory, setNewCategory] = useState({ name: "", image_url: "" });
+  const [newCategory, setNewCategory] = useState({ name: "", image_url: "", subcategories: [] as string[] });
+  const [newSubcategory, setNewSubcategory] = useState("");
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -54,6 +58,23 @@ const SeedProducts = () => {
     }
   };
 
+  const addSubcategory = () => {
+    if (!newSubcategory.trim()) return;
+    
+    setNewCategory({
+      ...newCategory,
+      subcategories: [...newCategory.subcategories, newSubcategory.trim()]
+    });
+    
+    setNewSubcategory("");
+  };
+
+  const removeSubcategory = (index: number) => {
+    const updatedSubcategories = [...newCategory.subcategories];
+    updatedSubcategories.splice(index, 1);
+    setNewCategory({ ...newCategory, subcategories: updatedSubcategories });
+  };
+
   const handleAddCategory = async () => {
     if (!newCategory.name.trim()) {
       toast({
@@ -70,7 +91,8 @@ const SeedProducts = () => {
         .insert([
           { 
             name: newCategory.name.trim(),
-            image_url: newCategory.image_url.trim() || null
+            image_url: newCategory.image_url.trim() || `https://picsum.photos/400/300?random=${Math.random()}`,
+            subcategories: newCategory.subcategories
           }
         ])
         .select();
@@ -78,7 +100,7 @@ const SeedProducts = () => {
       if (error) throw error;
       
       setCategories([...categories, ...(data || [])]);
-      setNewCategory({ name: "", image_url: "" });
+      setNewCategory({ name: "", image_url: "", subcategories: [] });
       setIsAddCategoryDialogOpen(false);
       
       toast({
@@ -131,7 +153,7 @@ const SeedProducts = () => {
 
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <Card className="w-[400px]">
+      <Card className="w-[450px]">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Database size={20} /> Seed Products
@@ -166,8 +188,19 @@ const SeedProducts = () => {
             <>
               <p className="text-gray-600 mb-4">
                 This will add more than 60 demo products to the database for testing purposes.
-                Each product will have appropriate descriptions and images.
+                Each product will have appropriate descriptions and images from picsum.photos.
               </p>
+              
+              <div className="mb-4">
+                <h3 className="text-sm font-medium mb-2">Available Categories:</h3>
+                <div className="flex flex-wrap gap-1">
+                  {categories.map((category) => (
+                    <Badge key={category.id} variant="outline">
+                      {category.name} {category.subcategories?.length > 0 && `(${category.subcategories.length} subcategories)`}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
               
               {loading && (
                 <div className="mb-4">
@@ -181,7 +214,7 @@ const SeedProducts = () => {
               
               <div className="bg-yellow-50 border-yellow-200 border p-3 rounded-md">
                 <p className="text-sm text-yellow-800">
-                  Warning: This is intended for development and testing only.
+                  Warning: This will replace any existing products. This action is intended for development and testing only.
                 </p>
               </div>
             </>
@@ -208,7 +241,7 @@ const SeedProducts = () => {
 
       {/* Add Category Dialog */}
       <Dialog open={isAddCategoryDialogOpen} onOpenChange={setIsAddCategoryDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>Add New Category</DialogTitle>
             <DialogDescription>
@@ -231,8 +264,56 @@ const SeedProducts = () => {
                 id="image"
                 value={newCategory.image_url}
                 onChange={(e) => setNewCategory({...newCategory, image_url: e.target.value})}
-                placeholder="https://example.com/image.jpg"
+                placeholder="https://example.com/image.jpg (optional)"
               />
+              <span className="text-xs text-gray-500">
+                Leave empty to use a random image from picsum.photos
+              </span>
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="subcategories">Subcategories</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="subcategories"
+                  value={newSubcategory}
+                  onChange={(e) => setNewSubcategory(e.target.value)}
+                  placeholder="e.g., Club Jerseys"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addSubcategory();
+                    }
+                  }}
+                />
+                <Button 
+                  type="button" 
+                  size="sm" 
+                  variant="outline" 
+                  onClick={addSubcategory}
+                >
+                  <Plus size={16} />
+                </Button>
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                Press Enter to add a subcategory
+              </div>
+              <div className="flex flex-wrap gap-1 mt-2">
+                {newCategory.subcategories.map((subcategory, index) => (
+                  <Badge key={index} variant="secondary" className="pr-1 flex items-center gap-1">
+                    <Tag size={12} />
+                    {subcategory}
+                    <button 
+                      onClick={() => removeSubcategory(index)}
+                      className="ml-1 hover:bg-gray-200 rounded-full p-1"
+                    >
+                      <X size={12} />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+              <div className="text-xs text-gray-500 mt-1">
+                Adding subcategories helps organize products. You can add, edit, or remove them later from the Categories section.
+              </div>
             </div>
           </div>
           <DialogFooter>
