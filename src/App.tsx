@@ -16,6 +16,9 @@ import Auth from "./pages/Auth";
 import Cart from "./pages/Cart";
 import Checkout from "./pages/Checkout";
 import Admin from "./pages/Admin";
+import AdminLogin from "./pages/AdminLogin";
+import MyOrders from "./pages/MyOrders";
+import SeedProducts from "./pages/SeedProducts";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -38,7 +41,10 @@ const App: React.FC = () => {
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/checkout" element={<Checkout />} />
+                <Route path="/my-orders" element={<MyOrders />} />
+                <Route path="/admin-login" element={<AdminLogin />} />
                 <Route path="/admin/*" element={<Admin />} />
+                <Route path="/seed-products" element={<SeedProducts />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </BrowserRouter>

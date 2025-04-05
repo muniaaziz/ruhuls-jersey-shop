@@ -1,188 +1,217 @@
 
-import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Search, ShoppingCart, User, LogOut } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { useAuth } from '@/contexts/AuthContext';
-import { useCart } from '@/contexts/CartContext';
+import React, { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useMediaQuery } from "@/hooks/use-mobile";
+import { useAuth } from "@/contexts/AuthContext";
+import { useCart } from "@/contexts/CartContext";
+import { Button } from "@/components/ui/button";
+import {
+  NavigationMenu,
+  NavigationMenuList,
+  NavigationMenuItem,
+} from "@/components/ui/navigation-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import { Menu, ShoppingCart, User, Package } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
-const Header: React.FC = () => {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const location = useLocation();
-  const navigate = useNavigate();
-  const { user, signOut, isAdmin } = useAuth();
+const Header = () => {
+  const { isAuthenticated, user, signOut, isAdmin } = useAuth();
   const { totalItems } = useCart();
-
-  const toggleMenu = () => {
-    setIsMenuOpen(!isMenuOpen);
-  };
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Handle search functionality
-    console.log('Searching for:', searchQuery);
-    if (searchQuery.trim()) {
-      navigate(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
+  const navigate = useNavigate();
+  const isMobile = useMediaQuery("(max-width: 768px)");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
-    navigate('/');
+    navigate("/");
   };
 
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
+  };
+
+  const menuItems = [
+    { name: "Home", href: "/" },
+    { name: "Products", href: "/products" },
+    { name: "About Us", href: "#" },
+    { name: "Contact", href: "#" },
+  ];
+
   return (
-    <header className="bg-white shadow-md sticky top-0 z-50">
-      <div className="jersey-container py-4">
-        <div className="flex items-center justify-between">
-          {/* Logo */}
-          <Link to="/" className="flex items-center">
-            <span className="text-2xl font-bold text-jersey-navy">Ruhul's<span className="text-jersey-purple">Jersey</span></span>
+    <header className="sticky top-0 z-40 w-full border-b bg-background">
+      <div className="container flex h-16 items-center justify-between px-4 max-w-7xl mx-auto">
+        <div className="flex items-center gap-6 md:gap-10">
+          <Link to="/" className="flex items-center space-x-2">
+            <Package size={24} />
+            <span className="font-bold text-xl hidden sm:inline-flex">
+              JerseyMart
+            </span>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden md:flex items-center space-x-6">
-            <Link to="/" className={`transition-colors ${location.pathname === '/' ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Home</Link>
-            <Link to="/products" className={`transition-colors ${location.pathname.includes('/products') || location.pathname.includes('/product') ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Products</Link>
-            <Link to="/about" className={`transition-colors ${location.pathname === '/about' ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>About</Link>
-            <Link to="/contact" className={`transition-colors ${location.pathname === '/contact' ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Contact</Link>
-            {isAdmin && (
-              <Link to="/admin" className={`transition-colors ${location.pathname.includes('/admin') ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Admin</Link>
-            )}
-          </nav>
+          <NavigationMenu className="hidden md:flex">
+            <NavigationMenuList>
+              {menuItems.map((item) => (
+                <NavigationMenuItem key={item.name}>
+                  <Button
+                    variant="ghost"
+                    className="text-base"
+                    asChild
+                  >
+                    <Link to={item.href}>{item.name}</Link>
+                  </Button>
+                </NavigationMenuItem>
+              ))}
+            </NavigationMenuList>
+          </NavigationMenu>
+        </div>
 
-          {/* Search, Cart, Account */}
-          <div className="hidden md:flex items-center space-x-4">
-            <form onSubmit={handleSearch} className="relative">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search jerseys..."
-                className="pl-3 pr-10 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-jersey-purple focus:border-transparent"
-              />
-              <button type="submit" className="absolute right-3 top-2.5 text-gray-500">
-                <Search size={18} />
-              </button>
-            </form>
-            <Link to="/cart" className="text-gray-700 hover:text-jersey-purple relative">
+        {/* Mobile Menu Trigger */}
+        <div className="md:hidden">
+          <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+            <SheetTrigger asChild>
+              <Button
+                size="icon"
+                variant="outline"
+                className="flex md:hidden"
+              >
+                <Menu />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="left">
+              <SheetHeader>
+                <SheetTitle className="text-left">Menu</SheetTitle>
+              </SheetHeader>
+              <div className="flex flex-col mt-8">
+                {menuItems.map((item, i) => (
+                  <Link
+                    key={i}
+                    to={item.href}
+                    className="py-3 text-base hover:text-primary"
+                    onClick={closeMobileMenu}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+                <Separator className="my-4" />
+                {isAuthenticated ? (
+                  <>
+                    <Link
+                      to="/my-orders"
+                      className="py-3 text-base hover:text-primary"
+                      onClick={closeMobileMenu}
+                    >
+                      My Orders
+                    </Link>
+                    <Link
+                      to="/account"
+                      className="py-3 text-base hover:text-primary"
+                      onClick={closeMobileMenu}
+                    >
+                      My Account
+                    </Link>
+                    {isAdmin && (
+                      <Link
+                        to="/admin"
+                        className="py-3 text-base hover:text-primary"
+                        onClick={closeMobileMenu}
+                      >
+                        Admin Dashboard
+                      </Link>
+                    )}
+                    <button
+                      onClick={() => {
+                        handleSignOut();
+                        closeMobileMenu();
+                      }}
+                      className="py-3 text-left text-base hover:text-primary"
+                    >
+                      Sign Out
+                    </button>
+                  </>
+                ) : (
+                  <Link
+                    to="/auth"
+                    className="py-3 text-base hover:text-primary"
+                    onClick={closeMobileMenu}
+                  >
+                    Sign In
+                  </Link>
+                )}
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+
+        {/* Desktop Right Side Navigation */}
+        <div className="flex items-center gap-4">
+          <Link to="/cart" className="relative">
+            <Button variant="ghost" size="icon">
               <ShoppingCart />
               {totalItems > 0 && (
-                <span className="absolute -top-2 -right-2 bg-jersey-purple text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                  {totalItems > 99 ? '99+' : totalItems}
-                </span>
+                <Badge
+                  className="absolute -top-1 -right-1 h-5 min-w-[20px] flex items-center justify-center p-0 text-xs"
+                  variant="destructive"
+                >
+                  {totalItems}
+                </Badge>
               )}
-            </Link>
-            
-            {user ? (
+            </Button>
+          </Link>
+
+          <div className="hidden md:flex">
+            {isAuthenticated ? (
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className={`text-gray-700 hover:text-jersey-purple ${location.pathname === '/account' ? 'text-jersey-purple' : ''}`}>
-                    <User size={20} />
+                  <Button variant="ghost" size="icon">
+                    <User />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Account</DropdownMenuLabel>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="p-2">
+                    <p className="font-medium">
+                      {user?.email}
+                    </p>
+                  </div>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem asChild>
-                    <Link to="/account" className="w-full cursor-pointer">Profile</Link>
+                    <Link to="/account">My Account</Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link to="/account/orders" className="w-full cursor-pointer">My Orders</Link>
+                    <Link to="/my-orders">My Orders</Link>
                   </DropdownMenuItem>
                   {isAdmin && (
                     <DropdownMenuItem asChild>
-                      <Link to="/admin" className="w-full cursor-pointer">Admin Dashboard</Link>
+                      <Link to="/admin">Admin Dashboard</Link>
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut} className="text-red-500 cursor-pointer">
-                    <LogOut size={16} className="mr-2" />
-                    Sign Out
+                  <DropdownMenuItem onClick={handleSignOut}>
+                    Sign out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Link to="/auth" className="text-gray-700 hover:text-jersey-purple">
-                <Button variant="outline" size="sm">Sign In</Button>
-              </Link>
+              <Button variant="default" size="sm" asChild>
+                <Link to="/auth">Sign In</Link>
+              </Button>
             )}
           </div>
-
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center space-x-4">
-            <Link to="/cart" className="text-gray-700 hover:text-jersey-purple relative">
-              <ShoppingCart size={20} />
-              {totalItems > 0 && (
-                <span className="absolute -top-2 -right-2 bg-jersey-purple text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
-                  {totalItems > 99 ? '99+' : totalItems}
-                </span>
-              )}
-            </Link>
-            <button onClick={toggleMenu} className="text-gray-700">
-              {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
-            </button>
-          </div>
         </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 animate-fade-in">
-            <form onSubmit={handleSearch} className="relative mb-4">
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search jerseys..."
-                className="w-full pl-3 pr-10 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-jersey-purple focus:border-transparent"
-              />
-              <button type="submit" className="absolute right-3 top-2.5 text-gray-500">
-                <Search size={18} />
-              </button>
-            </form>
-            <nav className="flex flex-col space-y-3">
-              <Link to="/" className={`transition-colors py-2 ${location.pathname === '/' ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Home</Link>
-              <Link to="/products" className={`transition-colors py-2 ${location.pathname.includes('/products') || location.pathname.includes('/product') ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Products</Link>
-              <Link to="/about" className={`transition-colors py-2 ${location.pathname === '/about' ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>About</Link>
-              <Link to="/contact" className={`transition-colors py-2 ${location.pathname === '/contact' ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Contact</Link>
-              {isAdmin && (
-                <Link to="/admin" className={`transition-colors py-2 ${location.pathname.includes('/admin') ? 'text-jersey-purple' : 'text-gray-800 hover:text-jersey-purple'}`}>Admin</Link>
-              )}
-              
-              {user ? (
-                <>
-                  <Link to="/account" className={`transition-colors py-2 text-gray-800 hover:text-jersey-purple ${location.pathname === '/account' ? 'text-jersey-purple' : ''}`}>
-                    <div className="flex items-center gap-2">
-                      <User size={18} /> My Account
-                    </div>
-                  </Link>
-                  <Link to="/account/orders" className="transition-colors py-2 text-gray-800 hover:text-jersey-purple">
-                    My Orders
-                  </Link>
-                  <button
-                    onClick={handleSignOut}
-                    className="flex items-center gap-2 text-red-500 py-2"
-                  >
-                    <LogOut size={18} /> Sign Out
-                  </button>
-                </>
-              ) : (
-                <Link to="/auth" className="transition-colors py-2 text-gray-800 hover:text-jersey-purple">
-                  <Button>Sign In / Register</Button>
-                </Link>
-              )}
-            </nav>
-          </div>
-        )}
       </div>
     </header>
   );

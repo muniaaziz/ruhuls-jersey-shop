@@ -1,10 +1,11 @@
 
 import React, { useState, useEffect } from "react";
-import { Navigate, Link, Outlet, useLocation } from "react-router-dom";
+import { Navigate, Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
 import { 
   Package, 
   ShoppingBag, 
@@ -12,7 +13,8 @@ import {
   Settings, 
   Home,
   PanelLeftOpen,
-  PanelLeftClose
+  PanelLeftClose,
+  Database
 } from "lucide-react";
 import AdminDashboard from "@/components/admin/AdminDashboard";
 import AdminProducts from "@/components/admin/AdminProducts";
@@ -20,12 +22,39 @@ import AdminOrders from "@/components/admin/AdminOrders";
 import AdminUsers from "@/components/admin/AdminUsers";
 
 const AdminLayout = () => {
-  const { isAdmin, loading } = useAuth();
+  const { user, loading } = useAuth();
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [checkingAdmin, setCheckingAdmin] = useState(true);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const location = useLocation();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState("dashboard");
 
   useEffect(() => {
+    // Check if user is admin
+    const checkAdminStatus = async () => {
+      if (!user) {
+        setCheckingAdmin(false);
+        return;
+      }
+      
+      try {
+        const { data, error } = await supabase
+          .rpc('has_role', { _role: 'admin' });
+          
+        if (error) throw error;
+        
+        setIsAdmin(!!data);
+      } catch (error) {
+        console.error('Error checking admin status:', error);
+        setIsAdmin(false);
+      } finally {
+        setCheckingAdmin(false);
+      }
+    };
+    
+    checkAdminStatus();
+    
     // Set active tab based on URL
     const path = location.pathname.split("/").pop();
     if (path === "admin") {
@@ -33,10 +62,10 @@ const AdminLayout = () => {
     } else if (path) {
       setActiveTab(path);
     }
-  }, [location]);
+  }, [user, location]);
 
   // Show loading state
-  if (loading) {
+  if (loading || checkingAdmin) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
@@ -47,9 +76,14 @@ const AdminLayout = () => {
     );
   }
 
+  // Redirect if not logged in
+  if (!user) {
+    return <Navigate to="/admin-login" replace />;
+  }
+
   // Redirect if not admin
   if (!isAdmin) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/admin-login" replace />;
   }
 
   const toggleSidebar = () => {
@@ -135,6 +169,13 @@ const AdminLayout = () => {
               >
                 <Settings size={20} />
                 {isSidebarOpen && <span className="ml-3">Settings</span>}
+              </Link>
+              <Link 
+                to="/seed-products" 
+                className={`flex items-center p-2 rounded-lg text-gray-600 hover:bg-gray-100`}
+              >
+                <Database size={20} />
+                {isSidebarOpen && <span className="ml-3">Seed Products</span>}
               </Link>
             </nav>
           </div>
