@@ -121,12 +121,20 @@ const Checkout = () => {
     if (!user) return;
 
     try {
+      // Fix: Make sure all required fields are included in the insert
+      const addressData = {
+        user_id: user.id,
+        name: values.name,
+        street: values.street,
+        city: values.city,
+        postal_code: values.postal_code,
+        phone: values.phone,
+        is_default: values.is_default
+      };
+      
       const { error } = await supabase
         .from("addresses")
-        .insert({
-          user_id: user.id,
-          ...values
-        });
+        .insert(addressData);
 
       if (error) {
         throw error;

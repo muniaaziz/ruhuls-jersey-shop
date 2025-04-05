@@ -37,6 +37,7 @@ const mockOrders: Order[] = [
     userId: "user-1",
     items: [
       {
+        id: "cart-item-1", // Add the missing id property
         productId: "product-1",
         quantity: 15,
         customization: {
