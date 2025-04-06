@@ -15,7 +15,8 @@ import {
   PanelLeftOpen,
   PanelLeftClose,
   Database,
-  LayoutGrid
+  LayoutGrid,
+  BarChart3
 } from "lucide-react";
 
 const AdminLayout = () => {
@@ -119,6 +120,18 @@ const AdminLayout = () => {
               >
                 <ShoppingBag size={20} />
                 {isSidebarOpen && <span className="ml-3">Dashboard</span>}
+              </Link>
+              <Link 
+                to="/admin/reports" 
+                className={`flex items-center p-2 rounded-lg ${
+                  activeTab === "reports" 
+                    ? "bg-jersey-purple text-white" 
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+                onClick={() => setActiveTab("reports")}
+              >
+                <BarChart3 size={20} />
+                {isSidebarOpen && <span className="ml-3">Reports</span>}
               </Link>
               <Link 
                 to="/admin/categories" 

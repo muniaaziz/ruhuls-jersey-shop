@@ -4,7 +4,7 @@ import { useParams } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import ProductCard from '@/components/products/ProductCard';
 import ProductFilter from '@/components/products/ProductFilter';
-import { allProducts } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 
 const Products: React.FC = () => {
@@ -16,15 +16,64 @@ const Products: React.FC = () => {
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(2000);
   const [sortOption, setSortOption] = useState('featured');
-
-  // Get unique categories from products
-  const categories = Array.from(new Set(allProducts.map(product => product.category)));
+  const [categories, setCategories] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Set initial products
-    setProducts(allProducts);
-    
-    // Apply initial category filter if exists in URL
+    const fetchProducts = async () => {
+      setLoading(true);
+      try {
+        // Fetch products from Supabase
+        const { data: productsData, error } = await supabase
+          .from('products')
+          .select('*');
+          
+        if (error) throw error;
+        
+        if (productsData) {
+          // Transform database products to match our Product type
+          const transformedProducts: Product[] = productsData.map(product => ({
+            id: product.id,
+            name: product.name,
+            description: product.description,
+            category: product.subcategory || 'uncategorized', // Use subcategory field
+            subcategory: product.subcategory,
+            imageUrl: product.image_url,
+            price: {
+              tier1: product.price_tier1,
+              tier2: product.price_tier2,
+              tier3: product.price_tier3,
+            },
+            popular: product.popular || false,
+            features: product.features || [],
+            customizationOptions: {
+              nameAllowed: product.name_allowed || false,
+              numberAllowed: product.number_allowed || false,
+              logoAllowed: product.logo_allowed || false,
+              customDesignAllowed: product.custom_design_allowed || false,
+            }
+          }));
+          
+          setProducts(transformedProducts);
+          
+          // Extract unique categories from products
+          const uniqueCategories = Array.from(
+            new Set(transformedProducts.map(product => product.category))
+          );
+          setCategories(uniqueCategories);
+        }
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, []);
+  
+  useEffect(() => {
+    // Set initial category filter if exists in URL
     if (categoryId) {
       setSelectedCategory(categoryId);
     }
@@ -36,7 +85,10 @@ const Products: React.FC = () => {
     
     // Filter by category
     if (selectedCategory) {
-      result = result.filter(product => product.category === selectedCategory);
+      result = result.filter(product => 
+        product.category.toLowerCase() === selectedCategory.toLowerCase() || 
+        product.subcategory?.toLowerCase() === selectedCategory.toLowerCase()
+      );
     }
     
     // Filter by search query
@@ -44,7 +96,8 @@ const Products: React.FC = () => {
       const query = searchQuery.toLowerCase();
       result = result.filter(product => 
         product.name.toLowerCase().includes(query) || 
-        product.description.toLowerCase().includes(query)
+        product.description.toLowerCase().includes(query) ||
+        product.category.toLowerCase().includes(query)
       );
     }
     
@@ -139,7 +192,11 @@ const Products: React.FC = () => {
             onSortChange={handleSortChange}
           />
           
-          {filteredProducts.length > 0 ? (
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-jersey-purple"></div>
+            </div>
+          ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {filteredProducts.map(product => (
                 <ProductCard key={product.id} product={product} />

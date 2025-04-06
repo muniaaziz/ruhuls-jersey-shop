@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Check, ChevronDown, Filter } from 'lucide-react';
-import { categories } from '@/data/mockData';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 
 interface ProductFilterProps {
   categories: string[];
@@ -23,6 +23,15 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(2000);
   const [sortOption, setSortOption] = useState('featured');
+  const [showPopularOnly, setShowPopularOnly] = useState(false);
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([]);
+
+  const availableFeatures = [
+    'Name Printing',
+    'Number Printing',
+    'Logo Placement',
+    'Custom Design'
+  ];
 
   const handlePriceChange = () => {
     onPriceRangeChange(minPrice, maxPrice);
@@ -35,6 +44,14 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
 
   const toggleFilter = () => {
     setIsFilterOpen(!isFilterOpen);
+  };
+
+  const handleFeatureChange = (feature: string) => {
+    setSelectedFeatures(prev => 
+      prev.includes(feature)
+        ? prev.filter(f => f !== feature)
+        : [...prev, feature]
+    );
   };
 
   return (
@@ -56,7 +73,7 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
         {/* Categories */}
         <div className="bg-white p-4 rounded-lg shadow-sm">
           <h3 className="font-medium mb-3 text-jersey-navy">Categories</h3>
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-60 overflow-y-auto">
             <div 
               className={`cursor-pointer flex items-center ${selectedCategory === null ? 'text-jersey-purple font-medium' : 'text-gray-600'}`}
               onClick={() => onCategoryChange(null)}
@@ -134,14 +151,15 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
           </div>
         </div>
 
-        {/* Popular Filter */}
+        {/* Popular Filter & Features */}
         <div className="bg-white p-4 rounded-lg shadow-sm">
           <h3 className="font-medium mb-3 text-jersey-navy">Popular Products</h3>
           <div className="space-y-2">
             <label className="flex items-center cursor-pointer">
-              <input 
-                type="checkbox" 
-                className="rounded text-jersey-purple focus:ring-jersey-purple h-4 w-4"
+              <Checkbox 
+                checked={showPopularOnly}
+                onCheckedChange={() => setShowPopularOnly(!showPopularOnly)}
+                className="text-jersey-purple focus:ring-jersey-purple"
               />
               <span className="ml-2">Show Popular Only</span>
             </label>
@@ -149,34 +167,16 @@ const ProductFilter: React.FC<ProductFilterProps> = ({
           <div className="mt-6">
             <h3 className="font-medium mb-3 text-jersey-navy">Features</h3>
             <div className="space-y-2">
-              <label className="flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="rounded text-jersey-purple focus:ring-jersey-purple h-4 w-4"
-                />
-                <span className="ml-2">Name Printing</span>
-              </label>
-              <label className="flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="rounded text-jersey-purple focus:ring-jersey-purple h-4 w-4"
-                />
-                <span className="ml-2">Number Printing</span>
-              </label>
-              <label className="flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="rounded text-jersey-purple focus:ring-jersey-purple h-4 w-4"
-                />
-                <span className="ml-2">Logo Placement</span>
-              </label>
-              <label className="flex items-center cursor-pointer">
-                <input 
-                  type="checkbox" 
-                  className="rounded text-jersey-purple focus:ring-jersey-purple h-4 w-4"
-                />
-                <span className="ml-2">Custom Design</span>
-              </label>
+              {availableFeatures.map(feature => (
+                <label key={feature} className="flex items-center cursor-pointer">
+                  <Checkbox 
+                    checked={selectedFeatures.includes(feature)}
+                    onCheckedChange={() => handleFeatureChange(feature)}
+                    className="text-jersey-purple focus:ring-jersey-purple"
+                  />
+                  <span className="ml-2">{feature}</span>
+                </label>
+              ))}
             </div>
           </div>
         </div>

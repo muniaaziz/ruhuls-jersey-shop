@@ -1,8 +1,10 @@
+
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Bar, BarChart, ResponsiveContainer, XAxis, YAxis, Tooltip } from 'recharts';
+import { Bar, BarChart, Line, LineChart, ResponsiveContainer, XAxis, YAxis, Tooltip, Legend } from 'recharts';
+import { subMonths, format, startOfMonth } from 'date-fns';
 
 const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
@@ -13,6 +15,8 @@ const AdminDashboard = () => {
     pendingOrders: 0,
     recentOrders: []
   });
+  const [monthlyOrders, setMonthlyOrders] = useState([]);
+  const [revenueTrend, setRevenueTrend] = useState([]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
@@ -52,12 +56,50 @@ const AdminDashboard = () => {
           .from('orders')
           .select(`
             *,
-            profiles:profiles(first_name, last_name)
+            profiles:user_id(first_name, last_name)
           `)
           .order('created_at', { ascending: false })
           .limit(5);
           
         if (recentError) throw recentError;
+
+        // Fetch monthly orders for the last 6 months
+        const sixMonthsAgo = subMonths(new Date(), 6);
+        
+        const { data: monthlyData, error: monthlyError } = await supabase
+          .from('orders')
+          .select('created_at, total_amount')
+          .gte('created_at', sixMonthsAgo.toISOString());
+        
+        if (monthlyError) throw monthlyError;
+        
+        // Process monthly orders
+        const monthlyOrdersMap = {};
+        const monthlyRevenueMap = {};
+        
+        if (monthlyData) {
+          monthlyData.forEach(order => {
+            const month = format(new Date(order.created_at), 'MMM');
+            monthlyOrdersMap[month] = (monthlyOrdersMap[month] || 0) + 1;
+            monthlyRevenueMap[month] = (monthlyRevenueMap[month] || 0) + order.total_amount;
+          });
+          
+          // Create datasets for charts
+          const months = Object.keys(monthlyOrdersMap);
+          
+          const ordersData = months.map(month => ({
+            name: month,
+            orders: monthlyOrdersMap[month]
+          }));
+          
+          const revenueData = months.map(month => ({
+            name: month,
+            revenue: monthlyRevenueMap[month]
+          }));
+          
+          setMonthlyOrders(ordersData);
+          setRevenueTrend(revenueData);
+        }
         
         setStats({
           totalProducts: productCount || 0,
@@ -75,15 +117,6 @@ const AdminDashboard = () => {
     
     fetchDashboardData();
   }, []);
-  
-  const orderData = [
-    { name: 'Jan', orders: 15 },
-    { name: 'Feb', orders: 20 },
-    { name: 'Mar', orders: 25 },
-    { name: 'Apr', orders: 18 },
-    { name: 'May', orders: 30 },
-    { name: 'Jun', orders: 22 },
-  ];
 
   if (loading) {
     return (
@@ -95,7 +128,12 @@ const AdminDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-3xl font-bold">Dashboard</h2>
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+        <h2 className="text-3xl font-bold">Dashboard</h2>
+        <Link to="/admin/reports" className="text-jersey-purple hover:text-jersey-purple/80 font-medium flex items-center">
+          View Detailed Reports
+        </Link>
+      </div>
       
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -156,17 +194,37 @@ const AdminDashboard = () => {
           </CardHeader>
           <CardContent>
             <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={orderData}>
+              <BarChart data={monthlyOrders}>
                 <XAxis dataKey="name" />
                 <YAxis />
                 <Tooltip />
-                <Bar dataKey="orders" fill="#8B5CF6" />
+                <Legend />
+                <Bar dataKey="orders" fill="#8B5CF6" name="Orders" />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>
         </Card>
         
         <Card>
+          <CardHeader>
+            <CardTitle>Revenue Trend</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={revenueTrend}>
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip 
+                  formatter={(value) => [`৳${Number(value).toLocaleString()}`, 'Revenue']}
+                />
+                <Legend />
+                <Line type="monotone" dataKey="revenue" stroke="#22C55E" name="Revenue" />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+        
+        <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Recent Orders</CardTitle>
           </CardHeader>
@@ -179,7 +237,7 @@ const AdminDashboard = () => {
                       <div>
                         <p className="font-medium">
                           {order.profiles?.first_name
-                            ? `${order.profiles.first_name} ${order.profiles.last_name}`
+                            ? `${order.profiles.first_name} ${order.profiles.last_name || ''}`
                             : "User"}
                         </p>
                         <p className="text-sm text-gray-500">

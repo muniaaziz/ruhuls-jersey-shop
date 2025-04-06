@@ -25,6 +25,7 @@ import AdminUsers from "./components/admin/AdminUsers";
 import AdminSettings from "./components/admin/AdminSettings";
 import AdminCategories from "./components/admin/AdminCategories";
 import AdminDashboard from "./components/admin/AdminDashboard";
+import AdminReports from "./components/admin/AdminReports";
 
 // Create a client
 const queryClient = new QueryClient();
@@ -56,6 +57,7 @@ const App: React.FC = () => {
                   <Route path="orders" element={<AdminOrders />} />
                   <Route path="users" element={<AdminUsers />} />
                   <Route path="categories" element={<AdminCategories />} />
+                  <Route path="reports" element={<AdminReports />} />
                   <Route path="settings" element={<AdminSettings />} />
                 </Route>
                 <Route path="*" element={<NotFound />} />

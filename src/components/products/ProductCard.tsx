@@ -13,11 +13,41 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
     <Link to={`/product/${product.id}`} className="group">
       <div className="bg-white rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg h-full flex flex-col">
         <div className="relative">
-          <ImagePlaceholder 
-            category={product.category}
-            text={product.name}
-            height="h-64"
-          />
+          {product.imageUrl ? (
+            <img 
+              src={product.imageUrl} 
+              alt={product.name}
+              className="w-full h-64 object-cover"
+              onError={(e) => {
+                // Fallback if image fails to load
+                const target = e.target as HTMLImageElement;
+                target.onerror = null; // Prevent infinite loops
+                target.style.display = 'none';
+                const parent = target.parentElement;
+                if (parent) {
+                  const placeholder = document.createElement('div');
+                  placeholder.className = 'w-full h-64';
+                  parent.appendChild(placeholder);
+                  
+                  // Render placeholder inside the new div
+                  const root = document.createRoot(placeholder);
+                  root.render(
+                    <ImagePlaceholder 
+                      category={product.category}
+                      text={product.name}
+                      height="h-64"
+                    />
+                  );
+                }
+              }}
+            />
+          ) : (
+            <ImagePlaceholder 
+              category={product.category}
+              text={product.name}
+              height="h-64"
+            />
+          )}
           {product.popular && (
             <div className="absolute top-2 right-2 bg-jersey-red text-white text-xs px-3 py-1 rounded-full">
               Popular
