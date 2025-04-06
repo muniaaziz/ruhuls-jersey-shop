@@ -67,7 +67,7 @@ const FeaturedCategories: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
             {categories.map((category) => (
               <Link 
-                to={`/products/${category.name.toLowerCase().trim()}`}
+                to={`/products/${category.id}`}
                 key={category.id}
                 className="group"
               >

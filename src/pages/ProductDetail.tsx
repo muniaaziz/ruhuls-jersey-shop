@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { ChevronRight, Check, AlertCircle } from 'lucide-react';
+import { useParams, Link, useNavigate } from 'react-router-dom';
+import { ChevronRight, Check, AlertCircle, ShoppingCart } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import ImagePlaceholder from '@/components/ui/ImagePlaceholder';
 import { Button } from '@/components/ui/button';
 import { createRoot } from 'react-dom/client';
+import { useCart } from '@/contexts/CartContext';
+import { useToast } from '@/hooks/use-toast';
 
 const ProductDetail: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
@@ -14,6 +16,9 @@ const ProductDetail: React.FC = () => {
   const [quantity, setQuantity] = useState<number>(10);
   const [activeTab, setActiveTab] = useState<'description' | 'customization' | 'sizing'>('description');
   const [loading, setLoading] = useState<boolean>(true);
+  const { addToCart } = useCart();
+  const { toast } = useToast();
+  const navigate = useNavigate();
   
   useEffect(() => {
     // Scroll to top when component mounts
@@ -84,6 +89,71 @@ const ProductDetail: React.FC = () => {
   
   const totalPrice = getPrice() * quantity;
   
+  const getDefaultSizesDistribution = () => {
+    const totalQuantity = quantity;
+    const sizesArray = ['S', 'M', 'L', 'XL', 'XXL'];
+    const distribution: Record<string, number> = {};
+    
+    const baseCount = Math.floor(totalQuantity / sizesArray.length);
+    const remainder = totalQuantity % sizesArray.length;
+    
+    sizesArray.forEach((size, index) => {
+      if (size === 'M' || size === 'L') {
+        distribution[size] = baseCount + (index < remainder ? 1 : 0) + 1;
+      } else {
+        distribution[size] = baseCount + (index < remainder ? 1 : 0);
+      }
+    });
+    
+    let currentTotal = Object.values(distribution).reduce((a, b) => a + b, 0);
+    if (currentTotal > totalQuantity) {
+      const sizesToReduce = ['XXL', 'XL', 'S'];
+      for (const size of sizesToReduce) {
+        const excess = currentTotal - totalQuantity;
+        if (excess <= 0) break;
+        const reduction = Math.min(excess, distribution[size]);
+        distribution[size] -= reduction;
+        currentTotal -= reduction;
+      }
+    }
+    
+    return distribution;
+  };
+  
+  const handleAddToCart = async () => {
+    if (!product) return;
+    
+    try {
+      const customization = {
+        nameRequired: false,
+        numberRequired: false,
+        logoRequired: false,
+        customDesignRequired: false,
+      };
+      
+      await addToCart(
+        product,
+        quantity, 
+        getDefaultSizesDistribution(),
+        customization
+      );
+      
+      toast({
+        title: "Added to cart",
+        description: `${quantity} x ${product.name} added to your cart`,
+      });
+      
+      navigate('/cart');
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+      toast({
+        title: "Error",
+        description: "Could not add to cart. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+  
   if (loading) {
     return (
       <Layout>
@@ -112,8 +182,7 @@ const ProductDetail: React.FC = () => {
     <Layout>
       <div className="bg-gray-50 py-8">
         <div className="jersey-container">
-          {/* Breadcrumbs */}
-          <nav className="flex mb-6 text-sm">
+          <nav className="flex flex-wrap mb-6 text-sm">
             <Link to="/" className="text-gray-500 hover:text-jersey-purple">Home</Link>
             <ChevronRight className="mx-2 h-4 w-4 text-gray-400" />
             <Link to="/products" className="text-gray-500 hover:text-jersey-purple">Products</Link>
@@ -121,23 +190,21 @@ const ProductDetail: React.FC = () => {
             <span className="text-jersey-purple">{product.name}</span>
           </nav>
           
-          {/* Product Details */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Product Image */}
+          <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
               <div>
                 <div className="rounded-lg overflow-hidden">
                   {product.imageUrl ? (
                     <img 
                       src={product.imageUrl}
                       alt={product.name}
-                      className="w-full h-96 object-cover"
+                      className="w-full h-64 md:h-96 object-cover"
                       onError={(e) => {
                         (e.target as HTMLImageElement).style.display = 'none';
                         const parent = (e.target as HTMLImageElement).parentElement;
                         if (parent) {
                           const placeholder = document.createElement('div');
-                          placeholder.className = 'h-96 w-full';
+                          placeholder.className = 'h-64 md:h-96 w-full';
                           parent.appendChild(placeholder);
                           
                           const root = createRoot(placeholder);
@@ -145,7 +212,7 @@ const ProductDetail: React.FC = () => {
                             <ImagePlaceholder 
                               category={product.category}
                               text={product.name}
-                              height="h-96"
+                              height="h-full"
                             />
                           );
                         }
@@ -155,15 +222,14 @@ const ProductDetail: React.FC = () => {
                     <ImagePlaceholder 
                       category={product.category}
                       text={product.name}
-                      height="h-96"
+                      height="h-64 md:h-96"
                     />
                   )}
                 </div>
                 
-                {/* Image thumbnails would go here in a real implementation */}
-                <div className="mt-4 flex space-x-2">
+                <div className="mt-4 flex space-x-2 overflow-x-auto pb-2">
                   {[1, 2, 3].map((i) => (
-                    <div key={i} className="h-20 w-20 rounded-md overflow-hidden cursor-pointer border-2 border-transparent hover:border-jersey-purple">
+                    <div key={i} className="h-16 md:h-20 w-16 md:w-20 flex-shrink-0 rounded-md overflow-hidden cursor-pointer border-2 border-transparent hover:border-jersey-purple">
                       <ImagePlaceholder 
                         category={product.category}
                         height="h-full"
@@ -174,36 +240,34 @@ const ProductDetail: React.FC = () => {
                 </div>
               </div>
               
-              {/* Product Info */}
               <div>
-                <h1 className="text-2xl md:text-3xl font-bold text-jersey-navy mb-2">{product.name}</h1>
+                <h1 className="text-xl md:text-3xl font-bold text-jersey-navy mb-2">{product.name}</h1>
                 
-                {/* Price tiers */}
                 <div className="mb-6">
                   <h3 className="font-medium text-gray-700 mb-2">Bulk Pricing (per piece):</h3>
                   <div className="grid grid-cols-3 gap-2 text-sm">
-                    <div className={`p-3 rounded-md ${quantity >= 10 && quantity <= 100 ? 'bg-jersey-purple text-white' : 'bg-gray-100'}`}>
+                    <div className={`p-2 md:p-3 rounded-md ${quantity >= 10 && quantity <= 100 ? 'bg-jersey-purple text-white' : 'bg-gray-100'}`}>
                       <p className="font-semibold">10-100 pcs</p>
                       <p>৳{product.price.tier1}</p>
                     </div>
-                    <div className={`p-3 rounded-md ${quantity > 100 && quantity <= 200 ? 'bg-jersey-purple text-white' : 'bg-gray-100'}`}>
+                    <div className={`p-2 md:p-3 rounded-md ${quantity > 100 && quantity <= 200 ? 'bg-jersey-purple text-white' : 'bg-gray-100'}`}>
                       <p className="font-semibold">101-200 pcs</p>
                       <p>৳{product.price.tier2}</p>
                     </div>
-                    <div className={`p-3 rounded-md ${quantity > 200 ? 'bg-jersey-purple text-white' : 'bg-gray-100'}`}>
+                    <div className={`p-2 md:p-3 rounded-md ${quantity > 200 ? 'bg-jersey-purple text-white' : 'bg-gray-100'}`}>
                       <p className="font-semibold">200+ pcs</p>
                       <p>৳{product.price.tier3}</p>
                     </div>
                   </div>
                 </div>
                 
-                {/* Quantity selector */}
                 <div className="mb-6">
                   <label className="block font-medium text-gray-700 mb-2">Quantity (Minimum 10):</label>
                   <div className="flex items-center">
                     <button 
                       onClick={() => setQuantity(Math.max(10, quantity - 5))}
                       className="bg-gray-200 px-3 py-1 rounded-l-md hover:bg-gray-300"
+                      aria-label="Decrease quantity"
                     >
                       -
                     </button>
@@ -213,17 +277,18 @@ const ProductDetail: React.FC = () => {
                       value={quantity} 
                       onChange={(e) => setQuantity(Math.max(10, parseInt(e.target.value) || 10))}
                       className="w-20 px-3 py-1 border-y text-center focus:outline-none"
+                      aria-label="Quantity"
                     />
                     <button 
                       onClick={() => setQuantity(quantity + 5)}
                       className="bg-gray-200 px-3 py-1 rounded-r-md hover:bg-gray-300"
+                      aria-label="Increase quantity"
                     >
                       +
                     </button>
                   </div>
                 </div>
                 
-                {/* Total price */}
                 <div className="mb-6 bg-gray-50 p-4 rounded-md">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-700">Current Price (per piece):</span>
@@ -240,7 +305,6 @@ const ProductDetail: React.FC = () => {
                   </div>
                 </div>
                 
-                {/* Customization available */}
                 <div className="mb-6">
                   <h3 className="font-medium text-gray-700 mb-2">Customization Available:</h3>
                   <ul className="space-y-1">
@@ -267,13 +331,15 @@ const ProductDetail: React.FC = () => {
                   </ul>
                 </div>
                 
-                {/* Action buttons */}
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Button className="bg-jersey-purple hover:bg-jersey-purple/90 text-white px-6 py-3 rounded-md font-medium flex-1">
-                    Customize & Order
+                  <Button 
+                    className="bg-jersey-purple hover:bg-jersey-purple/90 text-white px-4 py-3 rounded-md font-medium flex-1 flex items-center justify-center"
+                    onClick={handleAddToCart}
+                  >
+                    <ShoppingCart className="mr-2 h-4 w-4" /> Customize & Order
                   </Button>
                   <a 
-                    href="https://wa.me/8801712345678?text=Hello%2C%20I'm%20interested%20in%20ordering%20the%20product%3A%20" 
+                    href="https://wa.me/8801710093471?text=Hello%2C%20I'm%20interested%20in%20ordering%20the%20product%3A%20" 
                     target="_blank" 
                     rel="noopener noreferrer"
                     className="button-whatsapp flex-1 justify-center"
@@ -284,8 +350,7 @@ const ProductDetail: React.FC = () => {
                     Discuss on WhatsApp
                   </a>
                 </div>
-
-                {/* Minimum order info */}
+                
                 <div className="mt-4 flex items-start text-sm text-gray-600">
                   <AlertCircle className="h-4 w-4 text-amber-500 mr-2 flex-shrink-0 mt-0.5" />
                   <p>Minimum order quantity is 10 pieces. For orders less than 10 pieces, please contact us directly via WhatsApp.</p>
@@ -294,25 +359,23 @@ const ProductDetail: React.FC = () => {
             </div>
           </div>
           
-          {/* Keep the rest of the component the same */}
-          {/* Tabs */}
-          <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-            <div className="flex border-b">
+          <div className="bg-white rounded-lg shadow-md p-4 md:p-6 mb-8">
+            <div className="flex overflow-x-auto scrollbar-hide -mx-4 px-4 md:px-0 md:mx-0 border-b">
               <button
                 onClick={() => setActiveTab('description')}
-                className={`pb-4 px-4 font-medium ${activeTab === 'description' ? 'border-b-2 border-jersey-purple text-jersey-purple' : 'text-gray-500'}`}
+                className={`pb-4 px-4 font-medium whitespace-nowrap ${activeTab === 'description' ? 'border-b-2 border-jersey-purple text-jersey-purple' : 'text-gray-500'}`}
               >
                 Description
               </button>
               <button
                 onClick={() => setActiveTab('customization')}
-                className={`pb-4 px-4 font-medium ${activeTab === 'customization' ? 'border-b-2 border-jersey-purple text-jersey-purple' : 'text-gray-500'}`}
+                className={`pb-4 px-4 font-medium whitespace-nowrap ${activeTab === 'customization' ? 'border-b-2 border-jersey-purple text-jersey-purple' : 'text-gray-500'}`}
               >
-                Customization Options
+                Customization
               </button>
               <button
                 onClick={() => setActiveTab('sizing')}
-                className={`pb-4 px-4 font-medium ${activeTab === 'sizing' ? 'border-b-2 border-jersey-purple text-jersey-purple' : 'text-gray-500'}`}
+                className={`pb-4 px-4 font-medium whitespace-nowrap ${activeTab === 'sizing' ? 'border-b-2 border-jersey-purple text-jersey-purple' : 'text-gray-500'}`}
               >
                 Size Guide
               </button>
@@ -382,7 +445,6 @@ const ProductDetail: React.FC = () => {
               )}
               
               {activeTab === 'sizing' && (
-                // ... keep existing code (sizing tab content)
                 <div>
                   <h3 className="text-xl font-semibold text-jersey-navy mb-4">Size Guide</h3>
                   
@@ -448,7 +510,6 @@ const ProductDetail: React.FC = () => {
             </div>
           </div>
           
-          {/* Related Products - Fetch from Supabase */}
           <div>
             <h3 className="text-xl font-semibold text-jersey-navy mb-6">You May Also Like</h3>
             

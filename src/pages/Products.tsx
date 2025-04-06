@@ -11,13 +11,49 @@ const Products: React.FC = () => {
   const { categoryId } = useParams<{ categoryId?: string }>();
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(categoryId || null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [categoryName, setCategoryName] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(2000);
   const [sortOption, setSortOption] = useState('featured');
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Fetch the initial category name if categoryId is provided
+  useEffect(() => {
+    const fetchCategoryInfo = async () => {
+      if (!categoryId) return;
+      
+      try {
+        // Check if categoryId is a UUID (category ID) or string (category name)
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryId);
+        
+        if (isUuid) {
+          const { data, error } = await supabase
+            .from('categories')
+            .select('name')
+            .eq('id', categoryId)
+            .single();
+            
+          if (error) {
+            console.error('Error fetching category:', error);
+          } else if (data) {
+            setCategoryName(data.name);
+            setSelectedCategory(data.name);
+          }
+        } else {
+          // If it's a string/name, just use it directly
+          setCategoryName(categoryId);
+          setSelectedCategory(categoryId);
+        }
+      } catch (error) {
+        console.error('Error fetching category info:', error);
+      }
+    };
+    
+    fetchCategoryInfo();
+  }, [categoryId]);
 
   useEffect(() => {
     // Scroll to top when component mounts
@@ -68,6 +104,12 @@ const Products: React.FC = () => {
             new Set(transformedProducts.map(product => product.category))
           );
           setCategories(uniqueCategories);
+          
+          // If we're filtering by category ID, apply the filter immediately
+          if (categoryId) {
+            // This will be filtered later when categoryName is set
+            console.log("Will filter by category ID:", categoryId);
+          }
         }
       } catch (error) {
         console.error('Error fetching products:', error);
@@ -78,14 +120,6 @@ const Products: React.FC = () => {
 
     fetchProducts();
   }, []);
-  
-  useEffect(() => {
-    // Set initial category filter if exists in URL
-    if (categoryId) {
-      console.log("Category from URL:", categoryId);
-      setSelectedCategory(categoryId.toLowerCase());
-    }
-  }, [categoryId]);
 
   useEffect(() => {
     // Apply filters
@@ -175,9 +209,11 @@ const Products: React.FC = () => {
       <div className="bg-gray-50 py-8 md:py-12">
         <div className="jersey-container">
           <h1 className="text-3xl font-bold text-jersey-navy mb-6">
-            {selectedCategory 
-              ? `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Jerseys`
-              : 'All Products'
+            {categoryName 
+              ? `${categoryName} Jerseys`
+              : selectedCategory
+                ? `${selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)} Jerseys`
+                : 'All Products'
             }
           </h1>
           
