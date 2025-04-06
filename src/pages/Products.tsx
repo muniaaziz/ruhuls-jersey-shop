@@ -31,6 +31,7 @@ const Products: React.FC = () => {
         if (error) throw error;
         
         if (productsData) {
+          console.log("Fetched products:", productsData.length);
           // Transform database products to match our Product type
           const transformedProducts: Product[] = productsData.map(product => ({
             id: product.id,
@@ -42,7 +43,7 @@ const Products: React.FC = () => {
             price: {
               tier1: product.price_tier1,
               tier2: product.price_tier2,
-              tier3: product.price_tier3,
+              tier3: product.price_tier3 || 0,
             },
             popular: product.popular || false,
             features: product.features || [],
@@ -75,20 +76,27 @@ const Products: React.FC = () => {
   useEffect(() => {
     // Set initial category filter if exists in URL
     if (categoryId) {
-      setSelectedCategory(categoryId);
+      console.log("Category from URL:", categoryId);
+      setSelectedCategory(categoryId.toLowerCase());
     }
   }, [categoryId]);
 
   useEffect(() => {
     // Apply filters
     let result = [...products];
+    console.log("Filtering products. Total:", products.length);
+    console.log("Selected category:", selectedCategory);
     
-    // Filter by category
+    // Filter by category - handle case-insensitive comparison
     if (selectedCategory) {
-      result = result.filter(product => 
-        product.category.toLowerCase() === selectedCategory.toLowerCase() || 
-        product.subcategory?.toLowerCase() === selectedCategory.toLowerCase()
-      );
+      result = result.filter(product => {
+        const categoryMatch = product.category && 
+          product.category.toLowerCase() === selectedCategory.toLowerCase();
+        const subcategoryMatch = product.subcategory && 
+          product.subcategory.toLowerCase() === selectedCategory.toLowerCase();
+        return categoryMatch || subcategoryMatch;
+      });
+      console.log("After category filter:", result.length);
     }
     
     // Filter by search query
