@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ImagePlaceholder from '../ui/ImagePlaceholder';
@@ -23,9 +24,13 @@ const FeaturedCategories: React.FC = () => {
           .from('categories')
           .select('*');
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching categories:', error);
+          throw error;
+        }
         
         if (data) {
+          console.log('Fetched categories:', data.length);
           setCategories(data.map(cat => ({
             id: cat.id,
             name: cat.name,
@@ -58,7 +63,7 @@ const FeaturedCategories: React.FC = () => {
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-jersey-purple"></div>
           </div>
-        ) : (
+        ) : categories.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
             {categories.map((category) => (
               <Link 
@@ -115,6 +120,13 @@ const FeaturedCategories: React.FC = () => {
                 </div>
               </Link>
             ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <h3 className="text-xl font-medium text-jersey-navy mb-2">No Categories Found</h3>
+            <p className="text-gray-600">
+              Please check back later for our jersey categories.
+            </p>
           </div>
         )}
       </div>

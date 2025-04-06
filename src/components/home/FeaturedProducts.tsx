@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ImagePlaceholder from '../ui/ImagePlaceholder';
@@ -19,9 +20,13 @@ const FeaturedProducts: React.FC = () => {
           .eq('popular', true)
           .limit(6);
 
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching featured products:', error);
+          throw error;
+        }
         
         if (data) {
+          console.log("Fetched popular products:", data.length);
           // Transform database products to match our Product type
           const transformedProducts: Product[] = data.map(product => ({
             id: product.id,
@@ -72,7 +77,7 @@ const FeaturedProducts: React.FC = () => {
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-jersey-purple"></div>
           </div>
-        ) : (
+        ) : products.length > 0 ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
             {products.map((product) => (
               <Link 
@@ -142,6 +147,13 @@ const FeaturedProducts: React.FC = () => {
                 </div>
               </Link>
             ))}
+          </div>
+        ) : (
+          <div className="text-center py-12">
+            <h3 className="text-xl font-medium text-jersey-navy mb-2">No Featured Products Yet</h3>
+            <p className="text-gray-600">
+              Check back later for our most popular jersey styles.
+            </p>
           </div>
         )}
 

@@ -28,7 +28,10 @@ const Products: React.FC = () => {
           .from('products')
           .select('*');
           
-        if (error) throw error;
+        if (error) {
+          console.error('Error fetching products:', error);
+          throw error;
+        }
         
         if (productsData) {
           console.log("Fetched products:", productsData.length);
@@ -90,11 +93,13 @@ const Products: React.FC = () => {
     // Filter by category - handle case-insensitive comparison
     if (selectedCategory) {
       result = result.filter(product => {
-        const categoryMatch = product.category && 
-          product.category.toLowerCase() === selectedCategory.toLowerCase();
-        const subcategoryMatch = product.subcategory && 
-          product.subcategory.toLowerCase() === selectedCategory.toLowerCase();
-        return categoryMatch || subcategoryMatch;
+        if (!product.category && !product.subcategory) return false;
+        
+        const productCategory = product.category ? product.category.toLowerCase() : '';
+        const productSubcategory = product.subcategory ? product.subcategory.toLowerCase() : '';
+        const targetCategory = selectedCategory.toLowerCase();
+        
+        return productCategory === targetCategory || productSubcategory === targetCategory;
       });
       console.log("After category filter:", result.length);
     }
@@ -103,9 +108,9 @@ const Products: React.FC = () => {
     if (searchQuery) {
       const query = searchQuery.toLowerCase();
       result = result.filter(product => 
-        product.name.toLowerCase().includes(query) || 
-        product.description.toLowerCase().includes(query) ||
-        product.category.toLowerCase().includes(query)
+        (product.name && product.name.toLowerCase().includes(query)) || 
+        (product.description && product.description.toLowerCase().includes(query)) ||
+        (product.category && product.category.toLowerCase().includes(query))
       );
     }
     
