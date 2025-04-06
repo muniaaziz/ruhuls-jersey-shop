@@ -1,8 +1,8 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ImagePlaceholder from '../ui/ImagePlaceholder';
 import { supabase } from '@/integrations/supabase/client';
+import { createRoot } from 'react-dom/client';
 
 interface Category {
   id: string;

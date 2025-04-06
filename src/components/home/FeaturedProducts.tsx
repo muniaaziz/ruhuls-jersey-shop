@@ -1,9 +1,9 @@
-
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import ImagePlaceholder from '../ui/ImagePlaceholder';
 import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
+import { createRoot } from 'react-dom/client';
 
 const FeaturedProducts: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
