@@ -3,6 +3,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { Product } from '@/types';
 import ImagePlaceholder from '../ui/ImagePlaceholder';
+import { createRoot } from 'react-dom/client';
 
 interface ProductCardProps {
   product: Product;
@@ -29,8 +30,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
                   placeholder.className = 'w-full h-64';
                   parent.appendChild(placeholder);
                   
-                  // Render placeholder inside the new div
-                  const root = document.createRoot(placeholder);
+                  // Render placeholder inside the new div using createRoot from react-dom/client
+                  const root = createRoot(placeholder);
                   root.render(
                     <ImagePlaceholder 
                       category={product.category}
