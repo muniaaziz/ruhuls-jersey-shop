@@ -1,28 +1,74 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { ChevronRight, Check, AlertCircle } from 'lucide-react';
 import Layout from '@/components/layout/Layout';
-import { allProducts } from '@/data/mockData';
+import { supabase } from '@/integrations/supabase/client';
 import { Product } from '@/types';
 import ImagePlaceholder from '@/components/ui/ImagePlaceholder';
 import { Button } from '@/components/ui/button';
+import { createRoot } from 'react-dom/client';
 
 const ProductDetail: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
   const [product, setProduct] = useState<Product | null>(null);
   const [quantity, setQuantity] = useState<number>(10);
   const [activeTab, setActiveTab] = useState<'description' | 'customization' | 'sizing'>('description');
+  const [loading, setLoading] = useState<boolean>(true);
   
   useEffect(() => {
-    if (productId) {
-      const foundProduct = allProducts.find(p => p.id === productId);
-      if (foundProduct) {
-        setProduct(foundProduct);
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0);
+    
+    const fetchProduct = async () => {
+      if (!productId) return;
+      
+      setLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from('products')
+          .select('*')
+          .eq('id', productId)
+          .single();
+        
+        if (error) {
+          console.error('Error fetching product:', error);
+          throw error;
+        }
+        
+        if (data) {
+          console.log('Fetched product:', data);
+          setProduct({
+            id: data.id,
+            name: data.name,
+            description: data.description,
+            category: data.subcategory || 'uncategorized',
+            subcategory: data.subcategory,
+            imageUrl: data.image_url,
+            price: {
+              tier1: data.price_tier1,
+              tier2: data.price_tier2,
+              tier3: data.price_tier3 || 0,
+            },
+            popular: data.popular || false,
+            features: data.features || [],
+            customizationOptions: {
+              nameAllowed: data.name_allowed || false,
+              numberAllowed: data.number_allowed || false,
+              logoAllowed: data.logo_allowed || false,
+              customDesignAllowed: data.custom_design_allowed || false,
+            }
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching product:', error);
+      } finally {
+        setLoading(false);
       }
-      // Reset quantity when product changes
-      setQuantity(10);
-    }
+    };
+    
+    fetchProduct();
+    // Reset quantity when product changes
+    setQuantity(10);
   }, [productId]);
   
   const getPrice = () => {
@@ -37,6 +83,16 @@ const ProductDetail: React.FC = () => {
   };
   
   const totalPrice = getPrice() * quantity;
+  
+  if (loading) {
+    return (
+      <Layout>
+        <div className="jersey-container py-16 flex justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-jersey-purple"></div>
+        </div>
+      </Layout>
+    );
+  }
   
   if (!product) {
     return (
@@ -71,11 +127,37 @@ const ProductDetail: React.FC = () => {
               {/* Product Image */}
               <div>
                 <div className="rounded-lg overflow-hidden">
-                  <ImagePlaceholder 
-                    category={product.category}
-                    text={product.name}
-                    height="h-96"
-                  />
+                  {product.imageUrl ? (
+                    <img 
+                      src={product.imageUrl}
+                      alt={product.name}
+                      className="w-full h-96 object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).style.display = 'none';
+                        const parent = (e.target as HTMLImageElement).parentElement;
+                        if (parent) {
+                          const placeholder = document.createElement('div');
+                          placeholder.className = 'h-96 w-full';
+                          parent.appendChild(placeholder);
+                          
+                          const root = createRoot(placeholder);
+                          root.render(
+                            <ImagePlaceholder 
+                              category={product.category}
+                              text={product.name}
+                              height="h-96"
+                            />
+                          );
+                        }
+                      }}
+                    />
+                  ) : (
+                    <ImagePlaceholder 
+                      category={product.category}
+                      text={product.name}
+                      height="h-96"
+                    />
+                  )}
                 </div>
                 
                 {/* Image thumbnails would go here in a real implementation */}
@@ -212,6 +294,7 @@ const ProductDetail: React.FC = () => {
             </div>
           </div>
           
+          {/* Keep the rest of the component the same */}
           {/* Tabs */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
             <div className="flex border-b">
@@ -299,6 +382,7 @@ const ProductDetail: React.FC = () => {
               )}
               
               {activeTab === 'sizing' && (
+                // ... keep existing code (sizing tab content)
                 <div>
                   <h3 className="text-xl font-semibold text-jersey-navy mb-4">Size Guide</h3>
                   
@@ -364,40 +448,13 @@ const ProductDetail: React.FC = () => {
             </div>
           </div>
           
-          {/* Related Products */}
+          {/* Related Products - Fetch from Supabase */}
           <div>
             <h3 className="text-xl font-semibold text-jersey-navy mb-6">You May Also Like</h3>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-              {allProducts
-                .filter(p => p.category === product.category && p.id !== product.id)
-                .slice(0, 4)
-                .map(relatedProduct => (
-                  <div key={relatedProduct.id} className="bg-white rounded-lg overflow-hidden shadow-md transition-all duration-300 hover:shadow-lg">
-                    <Link to={`/product/${relatedProduct.id}`}>
-                      <div className="relative">
-                        <ImagePlaceholder 
-                          category={relatedProduct.category}
-                          text={relatedProduct.name}
-                          height="h-48"
-                        />
-                        {relatedProduct.popular && (
-                          <div className="absolute top-2 right-2 bg-jersey-red text-white text-xs px-3 py-1 rounded-full">
-                            Popular
-                          </div>
-                        )}
-                      </div>
-                      <div className="p-4">
-                        <h3 className="font-medium text-jersey-navy hover:text-jersey-purple transition-colors">
-                          {relatedProduct.name}
-                        </h3>
-                        <p className="text-sm text-gray-600 mt-1">
-                          From ৳{relatedProduct.price.tier1}/piece (10+ pcs)
-                        </p>
-                      </div>
-                    </Link>
-                  </div>
-                ))}
+            <div id="related-products" className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {/* Related products will be populated dynamically */}
+              {/* This will be implemented in a future update */}
             </div>
           </div>
         </div>

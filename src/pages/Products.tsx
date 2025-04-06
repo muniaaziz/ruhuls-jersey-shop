@@ -20,6 +20,9 @@ const Products: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Scroll to top when component mounts
+    window.scrollTo(0, 0);
+    
     const fetchProducts = async () => {
       setLoading(true);
       try {
@@ -95,9 +98,9 @@ const Products: React.FC = () => {
       result = result.filter(product => {
         if (!product.category && !product.subcategory) return false;
         
-        const productCategory = product.category ? product.category.toLowerCase() : '';
-        const productSubcategory = product.subcategory ? product.subcategory.toLowerCase() : '';
-        const targetCategory = selectedCategory.toLowerCase();
+        const productCategory = product.category ? product.category.toLowerCase().trim() : '';
+        const productSubcategory = product.subcategory ? product.subcategory.toLowerCase().trim() : '';
+        const targetCategory = selectedCategory.toLowerCase().trim();
         
         return productCategory === targetCategory || productSubcategory === targetCategory;
       });

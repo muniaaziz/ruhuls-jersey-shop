@@ -30,7 +30,7 @@ const FeaturedCategories: React.FC = () => {
         }
         
         if (data) {
-          console.log('Fetched categories:', data.length);
+          console.log('Fetched categories:', data);
           setCategories(data.map(cat => ({
             id: cat.id,
             name: cat.name,
@@ -67,7 +67,7 @@ const FeaturedCategories: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
             {categories.map((category) => (
               <Link 
-                to={`/products/${category.name.toLowerCase()}`}
+                to={`/products/${category.name.toLowerCase().trim()}`}
                 key={category.id}
                 className="group"
               >
