@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -136,6 +135,7 @@ const AdminOrders = () => {
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
     try {
+      // First try using direct update
       const { error: orderError } = await supabase
         .from('orders')
         .update({ 
@@ -144,9 +144,24 @@ const AdminOrders = () => {
         })
         .eq('id', orderId);
         
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error('Direct update failed, trying edge function:', orderError);
+        // If direct update fails due to RLS, try edge function
+        const { data: user } = await supabase.auth.getUser();
+        if (!user?.user) throw new Error("User not authenticated");
+        
+        const { data, error } = await supabase.functions.invoke('update-order-status', {
+          body: { 
+            orderId, 
+            status: newStatus,
+            notes: `Order status updated to ${newStatus}`
+          }
+        });
+        
+        if (error) throw error;
+      }
       
-      // Add status update record
+      // Add status update record directly (may need separate RLS policy)
       const { error: statusError } = await supabase
         .from('status_updates')
         .insert({
@@ -154,8 +169,11 @@ const AdminOrders = () => {
           status: newStatus,
           notes: `Order status updated to ${newStatus}`,
         });
-        
-      if (statusError) throw statusError;
+      
+      if (statusError) {
+        console.error('Status update insert error:', statusError);
+        // Continue even if this fails, as the order status was updated
+      }
       
       // Update local state
       setOrders(orders.map(order => 
@@ -251,14 +269,15 @@ const AdminOrders = () => {
       }
       
       // 4. Update order
-      const { error: updateError } = await supabase
+      const { data: updatedOrder, error: updateError } = await supabase
         .from('orders')
         .update({ 
           paid_amount: newPaidAmount,
           payment_status: newPaymentStatus,
           updated_at: new Date().toISOString()
         })
-        .eq('id', selectedOrderId);
+        .eq('id', selectedOrderId)
+        .select();
         
       if (updateError) throw updateError;
       
@@ -274,7 +293,7 @@ const AdminOrders = () => {
         
       if (paymentError) throw paymentError;
       
-      // 6. Update local state
+      // 6. Update local state immediately (no need to wait for a refresh)
       setOrders(orders.map(order => 
         order.id === selectedOrderId 
           ? { 

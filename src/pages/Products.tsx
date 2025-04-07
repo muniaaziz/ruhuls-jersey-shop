@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
 import ProductCard from '@/components/products/ProductCard';
 import ProductFilter from '@/components/products/ProductFilter';
@@ -9,6 +9,10 @@ import { Product } from '@/types';
 
 const Products: React.FC = () => {
   const { categoryId } = useParams<{ categoryId?: string }>();
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const categoryFromQuery = queryParams.get('category');
+  
   const [products, setProducts] = useState<Product[]>([]);
   const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -22,12 +26,14 @@ const Products: React.FC = () => {
 
   // Fetch the initial category name if categoryId is provided
   useEffect(() => {
+    const initialCategory = categoryId || categoryFromQuery;
+    
     const fetchCategoryInfo = async () => {
-      if (!categoryId) return;
+      if (!initialCategory) return;
       
       try {
         // First decode the categoryId if it's URL encoded
-        const decodedCategoryId = decodeURIComponent(categoryId);
+        const decodedCategoryId = decodeURIComponent(initialCategory);
         console.log("Decoded category ID/name:", decodedCategoryId);
         
         // Check if categoryId is a UUID (category ID) or string (category name)
@@ -59,7 +65,7 @@ const Products: React.FC = () => {
     };
     
     fetchCategoryInfo();
-  }, [categoryId]);
+  }, [categoryId, categoryFromQuery]);
 
   useEffect(() => {
     // Scroll to top when component mounts
@@ -85,7 +91,7 @@ const Products: React.FC = () => {
             id: product.id,
             name: product.name,
             description: product.description,
-            category: product.subcategory || 'uncategorized', // Use subcategory field
+            category: product.category || 'uncategorized', // Use category field
             subcategory: product.subcategory,
             imageUrl: product.image_url,
             price: {
@@ -107,8 +113,11 @@ const Products: React.FC = () => {
           
           // Extract unique categories from products
           const uniqueCategories = Array.from(
-            new Set(transformedProducts.map(product => product.category))
-          );
+            new Set([
+              ...transformedProducts.map(product => product.category),
+              ...transformedProducts.map(product => product.subcategory)
+            ].filter(Boolean))
+          ) as string[];
           setCategories(uniqueCategories);
         }
       } catch (error) {
@@ -147,7 +156,8 @@ const Products: React.FC = () => {
       result = result.filter(product => 
         (product.name && product.name.toLowerCase().includes(query)) || 
         (product.description && product.description.toLowerCase().includes(query)) ||
-        (product.category && product.category.toLowerCase().includes(query))
+        (product.category && product.category.toLowerCase().includes(query)) ||
+        (product.subcategory && product.subcategory.toLowerCase().includes(query))
       );
     }
     

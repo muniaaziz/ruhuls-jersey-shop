@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import Layout from "@/components/layout/Layout";
@@ -31,7 +30,6 @@ const OrderDetail = () => {
   const fetchOrderDetails = async () => {
     try {
       setLoading(true);
-      // Fetch order details
       const { data: orderData, error: orderError } = await supabase
         .from('orders')
         .select(`
@@ -44,7 +42,6 @@ const OrderDetail = () => {
 
       if (orderError) throw orderError;
 
-      // Fetch order items
       const { data: itemsData, error: itemsError } = await supabase
         .from('order_items')
         .select(`
@@ -55,7 +52,6 @@ const OrderDetail = () => {
 
       if (itemsError) throw itemsError;
 
-      // Fetch status updates
       const { data: statusData, error: statusError } = await supabase
         .from('status_updates')
         .select('*')
@@ -190,7 +186,6 @@ const OrderDetail = () => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-          {/* Left column - Order Items */}
           <div className="md:col-span-2">
             <Card>
               <CardHeader>
@@ -224,7 +219,6 @@ const OrderDetail = () => {
                           <h4 className="font-medium">{product.name}</h4>
                           <p className="text-sm text-gray-600">Quantity: {item.quantity}</p>
                           
-                          {/* Display sizes distribution */}
                           {item.sizes_distribution && Object.keys(item.sizes_distribution).length > 0 && (
                             <div className="mt-1">
                               <p className="text-sm text-gray-600">Sizes:</p>
@@ -238,7 +232,6 @@ const OrderDetail = () => {
                             </div>
                           )}
                           
-                          {/* Display any customizations */}
                           {item.customization && Object.keys(item.customization).length > 0 && (
                             <div className="mt-2">
                               <p className="text-sm text-gray-600">Customizations:</p>
@@ -259,7 +252,6 @@ const OrderDetail = () => {
                             </div>
                           )}
                           
-                          {/* Special Instructions */}
                           {item.special_instructions && (
                             <div className="mt-2">
                               <p className="text-sm text-gray-600">Instructions:</p>
@@ -278,7 +270,6 @@ const OrderDetail = () => {
               </CardContent>
             </Card>
             
-            {/* Order Status Timeline */}
             <Card className="mt-8">
               <CardHeader>
                 <CardTitle>Order Status Updates</CardTitle>
@@ -287,7 +278,6 @@ const OrderDetail = () => {
                 <div className="space-y-6">
                   {statusUpdates.map((update, index) => (
                     <div key={update.id} className="relative pl-8">
-                      {/* Status timeline dot and line */}
                       <div className="absolute left-0 top-1.5 w-4 h-4 rounded-full bg-jersey-purple"></div>
                       {index < statusUpdates.length - 1 && (
                         <div className="absolute left-2 top-5 w-0.5 h-12 bg-gray-200"></div>
@@ -317,9 +307,7 @@ const OrderDetail = () => {
             </Card>
           </div>
 
-          {/* Right column - Order Summary */}
           <div className="space-y-8">
-            {/* Order Summary */}
             <Card>
               <CardHeader>
                 <CardTitle>Order Summary</CardTitle>
@@ -352,7 +340,6 @@ const OrderDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Shipping Address */}
             <Card>
               <CardHeader>
                 <CardTitle>Shipping Address</CardTitle>
@@ -371,7 +358,6 @@ const OrderDetail = () => {
               </CardContent>
             </Card>
 
-            {/* Payment History */}
             <PaymentHistory orderId={orderId || ''} />
           </div>
         </div>
@@ -380,7 +366,6 @@ const OrderDetail = () => {
   );
 };
 
-// Helper function to calculate item price based on quantity tiers
 const calculateItemPrice = (quantity: number, product: any) => {
   if (quantity > 200) {
     return product.price_tier3;
