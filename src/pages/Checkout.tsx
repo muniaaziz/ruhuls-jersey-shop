@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Layout from "@/components/layout/Layout";
@@ -179,45 +180,65 @@ const Checkout = () => {
     setIsSubmitting(true);
 
     try {
-      // 1. Create order
+      // 1. Create order first
       const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .insert({
           user_id: user.id,
           total_amount: totalCost,
           delivery_address_id: selectedAddressId,
+          status: 'pending',
         })
         .select()
         .single();
 
-      if (orderError) throw orderError;
+      if (orderError) {
+        console.error("Order creation error:", orderError);
+        throw orderError;
+      }
 
-      // 2. Create order items
-      const orderItems = cartItems.map(item => ({
-        order_id: orderData!.id,
-        product_id: item.productId,
-        quantity: item.quantity,
-        customization: item.customization,
-        sizes_distribution: item.sizesDistribution,
-        special_instructions: item.specialInstructions,
-      }));
+      if (!orderData) {
+        throw new Error("Failed to create order. No data returned.");
+      }
 
-      const { error: orderItemsError } = await supabase
-        .from("order_items")
-        .insert(orderItems);
+      console.log("Order created successfully:", orderData);
+      
+      // 2. Create order items one by one to avoid RLS policy issues
+      for (const item of cartItems) {
+        const orderItemData = {
+          order_id: orderData.id,
+          product_id: item.product.id,
+          quantity: item.quantity,
+          customization: item.customization || {},
+          sizes_distribution: item.sizesDistribution || {},
+          special_instructions: item.specialInstructions || ""
+        };
 
-      if (orderItemsError) throw orderItemsError;
+        console.log("Creating order item:", orderItemData);
+        
+        const { error: itemError } = await supabase
+          .from("order_items")
+          .insert(orderItemData);
+
+        if (itemError) {
+          console.error("Order item creation error for item:", item, "Error:", itemError);
+          throw itemError;
+        }
+      }
 
       // 3. Create initial status update
       const { error: statusError } = await supabase
         .from("status_updates")
         .insert({
-          order_id: orderData!.id,
+          order_id: orderData.id,
           status: "pending",
           notes: "Order placed",
         });
 
-      if (statusError) throw statusError;
+      if (statusError) {
+        console.error("Status update error:", statusError);
+        throw statusError;
+      }
 
       // 4. Clear cart
       await clearCart();
@@ -228,12 +249,12 @@ const Checkout = () => {
       });
 
       // Redirect to order confirmation
-      navigate(`/account/orders/${orderData!.id}`);
+      navigate(`/account/orders/${orderData.id}`);
     } catch (error: any) {
       console.error("Error placing order:", error);
       toast({
         title: "Error placing order",
-        description: error.message,
+        description: error.message || "Failed to place your order. Please try again.",
         variant: "destructive",
       });
     } finally {

@@ -48,6 +48,12 @@ const FeaturedCategories: React.FC = () => {
     fetchCategories();
   }, []);
 
+  // Convert category name to URL-friendly format
+  const getCategoryUrlParam = (category: Category) => {
+    // Use the name for the URL parameter to match the filter in Products.tsx
+    return encodeURIComponent(category.name);
+  };
+
   return (
     <section className="bg-white section-padding">
       <div className="jersey-container">
@@ -67,7 +73,7 @@ const FeaturedCategories: React.FC = () => {
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 md:gap-6">
             {categories.map((category) => (
               <Link 
-                to={`/products/${category.id}`}
+                to={`/products/${getCategoryUrlParam(category)}`}
                 key={category.id}
                 className="group"
               >
