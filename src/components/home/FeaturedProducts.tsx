@@ -36,8 +36,8 @@ const FeaturedProducts: React.FC = () => {
             subcategory: product.subcategory,
             imageUrl: product.image_url,
             price: {
-              tier1: product.price_tier1,
-              tier2: product.price_tier2,
+              tier1: product.price_tier1 || 0,
+              tier2: product.price_tier2 || 0,
               tier3: product.price_tier3 || 0,
             },
             popular: product.popular || false,

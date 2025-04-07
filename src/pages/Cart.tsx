@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -23,7 +24,8 @@ const Cart: React.FC = () => {
 
   const calculateSubtotal = () => {
     return cartItems.reduce((total, item) => {
-      const price = item.product.price.tier1;
+      // Add null check for product and price
+      const price = item.product?.price?.tier1 || 0;
       return total + price * item.quantity;
     }, 0);
   };
@@ -101,18 +103,18 @@ const Cart: React.FC = () => {
                     {cartItems.map((item) => (
                       <li key={item.id} className="flex items-center justify-between py-3 border-b last:border-b-0">
                         <div className="flex items-center">
-                          <Link to={`/product/${item.product.id}`} className="mr-4">
+                          <Link to={`/product/${item.product?.id || '#'}`} className="mr-4">
                             <img
-                              src={item.product.imageUrl}
-                              alt={item.product.name}
+                              src={item.product?.imageUrl || '/placeholder.svg'}
+                              alt={item.product?.name || 'Product'}
                               className="w-20 h-20 object-cover rounded-md"
                             />
                           </Link>
                           <div>
-                            <Link to={`/product/${item.product.id}`} className="font-medium text-gray-700 hover:text-jersey-purple">
-                              {item.product.name}
+                            <Link to={`/product/${item.product?.id || '#'}`} className="font-medium text-gray-700 hover:text-jersey-purple">
+                              {item.product?.name || 'Product'}
                             </Link>
-                            <div className="text-sm text-gray-500">৳{item.product.price.tier1}</div>
+                            <div className="text-sm text-gray-500">৳{item.product?.price?.tier1 || 0}</div>
                             <div className="flex items-center border rounded-md">
                               <button
                                 onClick={() => updateItemQuantity(item.id, Math.max(1, item.quantity - 1))}
@@ -141,7 +143,9 @@ const Cart: React.FC = () => {
                           </div>
                         </div>
                         <div>
-                          <div className="font-medium text-gray-700">৳{item.product.price.tier1 * item.quantity}</div>
+                          <div className="font-medium text-gray-700">
+                            ৳{(item.product?.price?.tier1 || 0) * item.quantity}
+                          </div>
                           <Button variant="ghost" size="sm" onClick={() => removeItemFromCart(item.id)}>
                             Remove
                           </Button>

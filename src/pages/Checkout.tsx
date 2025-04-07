@@ -91,6 +91,11 @@ const Checkout = () => {
 
       // Create order items
       for (const item of cartItems) {
+        if (!item.product) {
+          console.error("Skipping order item - product is undefined");
+          continue;
+        }
+        
         const orderItem = {
           order_id: order.id,
           product_id: item.product.id,
@@ -201,8 +206,8 @@ const Checkout = () => {
                 <div className="space-y-4">
                   {cartItems.map((item) => (
                     <div key={item.id} className="flex justify-between">
-                      <span>{item.product.name} x {item.quantity}</span>
-                      <span>৳{item.product.price.tier1 * item.quantity}</span>
+                      <span>{item.product?.name || 'Product'} x {item.quantity}</span>
+                      <span>৳{(item.product?.price?.tier1 || 0) * item.quantity}</span>
                     </div>
                   ))}
                   <Separator />

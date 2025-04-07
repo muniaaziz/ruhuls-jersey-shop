@@ -67,8 +67,8 @@ const ProductCard: React.FC<ProductCardProps> = ({ product }) => {
             <div className="text-sm text-gray-600">
               <p className="font-medium">Bulk Pricing (per piece):</p>
               <div className="flex justify-between mt-1">
-                <span>10-100: ৳{product.price.tier1}</span>
-                <span>101+: ৳{product.price.tier2}+</span>
+                <span>10-100: ৳{product.price?.tier1 ?? 0}</span>
+                <span>101+: ৳{product.price?.tier2 ?? 0}+</span>
               </div>
             </div>
           </div>

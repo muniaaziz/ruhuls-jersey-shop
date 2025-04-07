@@ -290,7 +290,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   
   const calculateTotalPrice = () => {
     return cartItems.reduce((sum, item) => {
-      const price = item.product.price.tier1;
+      const price = item.product?.price?.tier1 || 0;
       return sum + (price * item.quantity);
     }, 0);
   };
@@ -298,12 +298,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   
   const totalCost = cartItems.reduce((sum, item) => {
-    const product = item.product;
-    let price = product.price.tier1;
+    if (!item.product || !item.product.price) return sum;
     
-    if (item.quantity > 200) {
+    const product = item.product;
+    let price = product.price.tier1 || 0;
+    
+    if (item.quantity > 200 && product.price.tier3) {
       price = product.price.tier3;
-    } else if (item.quantity > 100) {
+    } else if (item.quantity > 100 && product.price.tier2) {
       price = product.price.tier2;
     }
     
