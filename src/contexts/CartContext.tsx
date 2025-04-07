@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,14 +10,15 @@ type CartContextType = {
   cartItems: CartItem[];
   loading: boolean;
   addToCart: (product: Product, quantity: number, sizesDistribution: Record<string, number>, customization?: any, specialInstructions?: string) => Promise<void>;
-  updateCartItem: (itemId: string, quantity: number, sizesDistribution?: Record<string, number>) => Promise<void>;
-  removeCartItem: (itemId: string) => Promise<void>;
+  updateItemQuantity: (itemId: string, quantity: number | string) => void;
+  removeItemFromCart: (itemId: string) => Promise<void>;
   clearCart: () => Promise<void>;
+  calculateTotalPrice: () => number;
   totalItems: number;
   totalCost: number;
 };
 
-const CartContext = createContext<CartContextType | undefined>(undefined);
+export const CartContext = createContext<CartContextType | undefined>(undefined);
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
@@ -86,7 +86,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     try {
       console.log("Adding to cart:", { product, quantity, sizesDistribution, customization });
 
-      // First check if this product is already in the cart
       const { data: existingItem, error: fetchError } = await supabase
         .from('cart_items')
         .select('*')
@@ -100,13 +99,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       }
       
       if (existingItem) {
-        // Update existing cart item
         const sizeDist = existingItem.sizes_distribution as Record<string, number> || {};
         const customOpts = existingItem.customization as Record<string, any> || {};
         
         const newQuantity = existingItem.quantity + quantity;
         
-        // Merge the sizes distribution
         const newSizesDistribution = { ...sizeDist };
         for (const [size, count] of Object.entries(sizesDistribution)) {
           if (newSizesDistribution[size]) {
@@ -141,7 +138,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           description: `${product.name} quantity increased to ${newQuantity}`,
         });
       } else {
-        // Add new cart item
         const newItem = {
           user_id: user.id,
           product_id: product.id,
@@ -179,10 +175,17 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   };
   
-  const updateCartItem = async (itemId: string, quantity: number, sizesDistribution?: Record<string, number>) => {
+  const updateItemQuantity = async (itemId: string, quantity: number | string) => {
     if (!user) return;
     
     try {
+      if (typeof quantity === 'string') {
+        if (quantity === '') return;
+        const parsedQuantity = parseInt(quantity);
+        if (isNaN(parsedQuantity)) return;
+        quantity = parsedQuantity;
+      }
+
       const { data: existingItem, error: fetchError } = await supabase
         .from('cart_items')
         .select('*')
@@ -201,10 +204,6 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         quantity,
         updated_at: new Date().toISOString()
       };
-      
-      if (sizesDistribution) {
-        updateData.sizes_distribution = sizesDistribution;
-      }
       
       const { error: updateError } = await supabase
         .from('cart_items')
@@ -231,7 +230,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   };
   
-  const removeCartItem = async (itemId: string) => {
+  const removeItemFromCart = async (itemId: string) => {
     if (!user) return;
     
     try {
@@ -289,16 +288,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   };
   
+  const calculateTotalPrice = () => {
+    return cartItems.reduce((sum, item) => {
+      const price = item.product.price.tier1;
+      return sum + (price * item.quantity);
+    }, 0);
+  };
+  
   const totalItems = cartItems.reduce((sum, item) => sum + item.quantity, 0);
   
   const totalCost = cartItems.reduce((sum, item) => {
     const product = item.product;
-    let price = product.price_tier1;
+    let price = product.price.tier1;
     
     if (item.quantity > 200) {
-      price = product.price_tier3;
+      price = product.price.tier3;
     } else if (item.quantity > 100) {
-      price = product.price_tier2;
+      price = product.price.tier2;
     }
     
     return sum + (price * item.quantity);
@@ -310,9 +316,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         cartItems,
         loading,
         addToCart,
-        updateCartItem,
-        removeCartItem,
+        updateItemQuantity,
+        removeItemFromCart,
         clearCart,
+        calculateTotalPrice,
         totalItems,
         totalCost
       }}

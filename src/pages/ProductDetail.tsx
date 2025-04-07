@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Layout from '@/components/layout/Layout';
@@ -14,7 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import ImagePlaceholder from "@/components/ui/ImagePlaceholder";
-import { CartContext, useCart } from "@/contexts/CartContext";
+import { useCart } from "@/contexts/CartContext";
 
 const ProductDetail: React.FC = () => {
   const { productId } = useParams<{ productId: string }>();
@@ -107,13 +108,17 @@ const ProductDetail: React.FC = () => {
       return;
     }
 
+    // Create empty sizes distribution object (required by type)
+    const sizesDistribution: Record<string, number> = { "default": quantityValue };
+
+    // Create customization object
     const customization = {
       name: customName,
       number: customNumber,
-      specialInstructions: specialInstructions,
     };
 
-    addToCart(product, quantityValue, customization);
+    addToCart(product, quantityValue, sizesDistribution, customization, specialInstructions);
+    
     toast({
       title: "Added to cart",
       description: `${quantityValue} ${product.name} added to cart`,
@@ -265,18 +270,18 @@ const ProductDetail: React.FC = () => {
               </div>
             </div>
 
-            {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row gap-4 mt-8">
+            {/* Action buttons - fix alignment */}
+            <div className="flex flex-col sm:flex-row gap-4 mt-8 w-full">
               <Button
                 onClick={openCustomizationModal}
-                className="flex-1 bg-jersey-purple hover:bg-jersey-purple-dark text-white px-6 py-2"
+                className="w-full sm:flex-1 bg-jersey-purple hover:bg-jersey-purple-dark text-white"
               >
                 Customize & Order
               </Button>
               <Button
                 variant="outline"
                 onClick={handleWhatsAppClick}
-                className="flex-1 border-jersey-purple text-jersey-purple hover:bg-jersey-purple/10"
+                className="w-full sm:flex-1 border-jersey-purple text-jersey-purple hover:bg-jersey-purple/10"
               >
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -304,7 +309,7 @@ const ProductDetail: React.FC = () => {
             <DialogTitle>Customize Your Jersey</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
-            {product.customizationOptions?.nameAllowed && (
+            {product?.customizationOptions?.nameAllowed && (
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="name" className="text-right">
                   Custom Name
@@ -317,7 +322,7 @@ const ProductDetail: React.FC = () => {
                 />
               </div>
             )}
-            {product.customizationOptions?.numberAllowed && (
+            {product?.customizationOptions?.numberAllowed && (
               <div className="grid grid-cols-4 items-center gap-4">
                 <Label htmlFor="number" className="text-right">
                   Custom Number

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Layout from "@/components/layout/Layout";
@@ -89,20 +90,41 @@ const Checkout = () => {
       console.log("Created order:", order);
 
       // Create order items
-      const orderItems = cartItems.map(item => ({
-        order_id: order.id,
-        product_id: item.product.id,
-        quantity: item.quantity,
-        customization: item.customization || {},
-        sizes_distribution: item.sizes || {},
-        special_instructions: item.specialInstructions,
-      }));
+      for (const item of cartItems) {
+        const orderItem = {
+          order_id: order.id,
+          product_id: item.product.id,
+          quantity: item.quantity,
+          customization: item.customization || {},
+          sizes_distribution: item.sizesDistribution || {},
+          special_instructions: item.specialInstructions,
+        };
 
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
+        const { error: itemError } = await supabase
+          .from('order_items')
+          .insert(orderItem);
 
-      if (itemsError) throw itemsError;
+        if (itemError) throw itemError;
+      }
+
+      // Create initial status update using edge function to bypass RLS
+      const statusUpdateResponse = await fetch('/api/update-order-status', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${await supabase.auth.getSession().then(res => res.data.session?.access_token)}`
+        },
+        body: JSON.stringify({
+          orderId: order.id,
+          status: 'pending',
+          notes: 'Order placed'
+        })
+      });
+
+      if (!statusUpdateResponse.ok) {
+        const errorData = await statusUpdateResponse.json();
+        throw new Error(`Status update failed: ${errorData.error}`);
+      }
 
       // Clear cart after successful order
       clearCart();

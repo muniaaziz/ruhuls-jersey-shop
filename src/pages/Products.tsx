@@ -91,7 +91,7 @@ const Products: React.FC = () => {
             id: product.id,
             name: product.name,
             description: product.description,
-            category: product.category || 'uncategorized', // Use category field
+            category: product.subcategory || 'uncategorized', // Use subcategory field for category
             subcategory: product.subcategory,
             imageUrl: product.image_url,
             price: {
