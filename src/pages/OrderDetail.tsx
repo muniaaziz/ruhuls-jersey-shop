@@ -183,7 +183,7 @@ const OrderDetail = () => {
                 <span className="ml-1">{order.status.charAt(0).toUpperCase() + order.status.slice(1)}</span>
               </Badge>
               <Badge variant="outline" className={getPaymentStatusBadgeStyles(order.payment_status)}>
-                {order.payment_status.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                {order.payment_status.split('_').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
               </Badge>
             </div>
           </div>
@@ -231,7 +231,7 @@ const OrderDetail = () => {
                               <div className="flex flex-wrap gap-2 mt-1">
                                 {Object.entries(item.sizes_distribution).map(([size, count]) => (
                                   <span key={size} className="text-xs bg-gray-100 px-2 py-1 rounded">
-                                    {size}: {count}
+                                    {size}: {count as React.ReactNode}
                                   </span>
                                 ))}
                               </div>
