@@ -26,26 +26,32 @@ const Products: React.FC = () => {
       if (!categoryId) return;
       
       try {
+        // First decode the categoryId if it's URL encoded
+        const decodedCategoryId = decodeURIComponent(categoryId);
+        console.log("Decoded category ID/name:", decodedCategoryId);
+        
         // Check if categoryId is a UUID (category ID) or string (category name)
-        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(categoryId);
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(decodedCategoryId);
         
         if (isUuid) {
           const { data, error } = await supabase
             .from('categories')
             .select('name')
-            .eq('id', categoryId)
+            .eq('id', decodedCategoryId)
             .single();
             
           if (error) {
-            console.error('Error fetching category:', error);
+            console.error('Error fetching category by ID:', error);
           } else if (data) {
+            console.log("Found category by ID:", data);
             setCategoryName(data.name);
             setSelectedCategory(data.name);
           }
         } else {
           // If it's a string/name, just use it directly
-          setCategoryName(categoryId);
-          setSelectedCategory(categoryId);
+          console.log("Using category name directly:", decodedCategoryId);
+          setCategoryName(decodedCategoryId);
+          setSelectedCategory(decodedCategoryId);
         }
       } catch (error) {
         console.error('Error fetching category info:', error);
@@ -104,12 +110,6 @@ const Products: React.FC = () => {
             new Set(transformedProducts.map(product => product.category))
           );
           setCategories(uniqueCategories);
-          
-          // If we're filtering by category ID, apply the filter immediately
-          if (categoryId) {
-            // This will be filtered later when categoryName is set
-            console.log("Will filter by category ID:", categoryId);
-          }
         }
       } catch (error) {
         console.error('Error fetching products:', error);

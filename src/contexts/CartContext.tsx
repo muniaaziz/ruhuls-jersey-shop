@@ -84,6 +84,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
     
     try {
+      console.log("Adding to cart:", { product, quantity, sizesDistribution, customization });
+
+      // First check if this product is already in the cart
       const { data: existingItem, error: fetchError } = await supabase
         .from('cart_items')
         .select('*')
@@ -92,6 +95,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         .maybeSingle();
         
       if (fetchError) {
+        console.error("Error checking for existing cart item:", fetchError);
         throw fetchError;
       }
       
@@ -112,18 +116,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           }
         }
         
+        const updateData = {
+          quantity: newQuantity,
+          sizes_distribution: newSizesDistribution,
+          customization: { ...customOpts, ...customization },
+          special_instructions: specialInstructions || existingItem.special_instructions,
+          updated_at: new Date().toISOString()
+        };
+        
+        console.log("Updating existing cart item:", { id: existingItem.id, updateData });
+        
         const { error: updateError } = await supabase
           .from('cart_items')
-          .update({
-            quantity: newQuantity,
-            sizes_distribution: newSizesDistribution,
-            customization: { ...customOpts, ...customization },
-            special_instructions: specialInstructions || existingItem.special_instructions,
-            updated_at: new Date().toISOString()
-          })
+          .update(updateData)
           .eq('id', existingItem.id);
           
         if (updateError) {
+          console.error("Error updating cart item:", updateError);
           throw updateError;
         }
         
@@ -133,18 +142,23 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         });
       } else {
         // Add new cart item
+        const newItem = {
+          user_id: user.id,
+          product_id: product.id,
+          quantity,
+          sizes_distribution: sizesDistribution,
+          customization: customization,
+          special_instructions: specialInstructions
+        };
+        
+        console.log("Creating new cart item:", newItem);
+        
         const { error: insertError } = await supabase
           .from('cart_items')
-          .insert({
-            user_id: user.id,
-            product_id: product.id,
-            quantity,
-            sizes_distribution: sizesDistribution,
-            customization: customization,
-            special_instructions: specialInstructions
-          });
+          .insert(newItem);
           
         if (insertError) {
+          console.error("Error inserting cart item:", insertError);
           throw insertError;
         }
         
