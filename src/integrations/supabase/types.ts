@@ -183,10 +183,12 @@ export type Database = {
       }
       orders: {
         Row: {
+          booking_amount: number
           created_at: string
           delivery_address_id: string | null
           id: string
           paid_amount: number
+          payment_status: string
           status: string
           total_amount: number
           tracking_info: string | null
@@ -194,10 +196,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          booking_amount?: number
           created_at?: string
           delivery_address_id?: string | null
           id?: string
           paid_amount?: number
+          payment_status?: string
           status?: string
           total_amount: number
           tracking_info?: string | null
@@ -205,10 +209,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          booking_amount?: number
           created_at?: string
           delivery_address_id?: string | null
           id?: string
           paid_amount?: number
+          payment_status?: string
           status?: string
           total_amount?: number
           tracking_info?: string | null

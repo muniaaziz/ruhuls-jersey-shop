@@ -180,12 +180,15 @@ const Checkout = () => {
     setIsSubmitting(true);
 
     try {
-      // 1. Create order first
+      // 1. Create the order first with payment tracking
       const { data: orderData, error: orderError } = await supabase
         .from("orders")
         .insert({
           user_id: user.id,
           total_amount: totalCost,
+          booking_amount: 0, // Default booking amount is 0
+          paid_amount: 0, // Initial paid amount is 0
+          payment_status: 'unpaid', // Initial status is unpaid
           delivery_address_id: selectedAddressId,
           status: 'pending',
         })
@@ -203,8 +206,9 @@ const Checkout = () => {
 
       console.log("Order created successfully:", orderData);
       
-      // 2. Create order items one by one to avoid RLS policy issues
-      for (const item of cartItems) {
+      // 2. Create order items individually to avoid RLS policy issues
+      let allItemsCreated = true;
+      const orderItemPromises = cartItems.map(async (item) => {
         const orderItemData = {
           order_id: orderData.id,
           product_id: item.product.id,
@@ -222,8 +226,16 @@ const Checkout = () => {
 
         if (itemError) {
           console.error("Order item creation error for item:", item, "Error:", itemError);
+          allItemsCreated = false;
           throw itemError;
         }
+      });
+      
+      // Wait for all order items to be created
+      await Promise.all(orderItemPromises);
+
+      if (!allItemsCreated) {
+        throw new Error("Failed to create one or more order items");
       }
 
       // 3. Create initial status update
